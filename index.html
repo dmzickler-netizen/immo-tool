@@ -116,6 +116,14 @@
   .finding button:hover{background:var(--primary2)}
   .finding button.done{background:var(--good)}
   .raw-text{margin-top:10px;max-height:240px;overflow:auto;background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink2);white-space:pre-wrap;line-height:1.4}
+  textarea#paste-box,textarea#paste-box-grund{width:100%;min-height:120px;font-family:inherit;font-size:13px;padding:10px;border:1px solid var(--border);border-radius:6px;resize:vertical;background:#fff}
+  textarea#paste-box:focus,textarea#paste-box-grund:focus{outline:none;border-color:var(--primary2);box-shadow:0 0 0 3px rgba(44,82,130,0.12)}
+  .bm-link{display:inline-block;background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;padding:8px 14px;border-radius:6px;text-decoration:none;font-weight:600;font-size:13px;cursor:grab;box-shadow:0 2px 6px rgba(217,119,6,0.3);user-select:none}
+  .bm-link:hover{background:linear-gradient(135deg,#b45309,#d97706)}
+  .bm-link:active{cursor:grabbing}
+  .bm-steps{counter-reset:bm;list-style:none;padding-left:0;margin:10px 0}
+  .bm-steps li{counter-increment:bm;padding:6px 0 6px 32px;position:relative;font-size:13px;color:var(--ink2)}
+  .bm-steps li::before{content:counter(bm);position:absolute;left:0;top:5px;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;text-align:center;font-size:11px;font-weight:700;line-height:22px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -150,6 +158,37 @@
 
   <!-- ===================== TAB: OBJEKT ===================== -->
   <div class="tab active" id="tab-objekt">
+
+    <div class="card" style="margin-bottom:14px">
+      <h2>📋 Inserat-Text einfügen (ImmoScout, Immowelt, Kleinanzeigen, Exposé)</h2>
+      <div class="legend">
+        Markiere den Anzeigentext auf der Portal-Seite (Cmd+A → Cmd+C), füge ihn hier ein und klick „Werte erkennen".
+        Erkannt werden: Kaufpreis, Wohnfläche, Baujahr, Adresse, Stellplätze, Bodenrichtwert, Miteigentumsanteil.
+      </div>
+      <textarea id="paste-box" placeholder="Hier Anzeigentext einfügen (z.B. komplettes ImmoScout-Exposé)…"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <button class="btn" onclick="parsePastedText()">Werte erkennen</button>
+        <button class="btn btn-sec" onclick="document.getElementById('paste-box').value='';document.getElementById('paste-findings').innerHTML=''">Leeren</button>
+      </div>
+      <div class="findings" id="paste-findings"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <h2>🔖 Bookmarklet — 1-Klick-Import von Immobilien-Portalen</h2>
+      <div class="legend">
+        Lesezeichen, das auf <em>der jeweiligen Anzeigenseite</em> ausgeführt wird (umgeht CORS, kein Server, keine Daten an Dritte). Funktioniert für ImmoScout24, Immowelt, eBay-Kleinanzeigen, McMakler, immonet u.v.m.
+      </div>
+      <ol class="bm-steps">
+        <li>Lesezeichenleiste einblenden: Cmd+Shift+B (Chrome/Safari) bzw. Strg+Shift+B</li>
+        <li>Den orangen Button unten <strong>per Drag&amp;Drop in die Lesezeichenleiste ziehen</strong></li>
+        <li>Auf einer Immo-Anzeigenseite das Lesezeichen anklicken → das Tool öffnet sich mit ausgefüllten Werten</li>
+      </ol>
+      <a class="bm-link" id="bm-link" href="#" draggable="true">📥 → Immo-Tool: Daten importieren</a>
+      <div class="hint" style="margin-top:10px;font-size:11px;color:var(--muted)">
+        Tipp: Vor dem Klick „Mehr anzeigen" / „Beschreibung" voll ausklappen, damit alle Werte im sichtbaren Text stehen.
+      </div>
+    </div>
+
     <div class="grid grid-2">
 
       <div class="card">
@@ -1597,8 +1636,8 @@ async function readPdfText(file){
   return all;
 }
 
-function renderFindings(findings){
-  const c = document.getElementById('pdf-findings');
+function renderFindings(findings, targetId){
+  const c = document.getElementById(targetId || 'pdf-findings');
   c.innerHTML = '';
   if(!findings.length){
     c.innerHTML = '<div class="alert alert-warn" style="margin:8px 0">⚠️ Keine bekannten Felder erkannt. Womöglich Scan-PDF (Bild) oder ungewöhnliches Format. Roh-Text unten zur Kontrolle.</div>';
@@ -1685,6 +1724,66 @@ async function handlePdfFiles(files){
   }
 }
 
+function parsePastedText(){
+  const t = document.getElementById('paste-box').value;
+  if(!t.trim()){
+    document.getElementById('paste-findings').innerHTML = '<div class="alert alert-warn" style="margin:8px 0">⚠️ Bitte zuerst Text einfügen.</div>';
+    return;
+  }
+  const findings = extractFromPdf(t);
+  renderFindings(findings, 'paste-findings');
+}
+
+function applyUrlParams(){
+  const params = new URLSearchParams(window.location.search);
+  const map = {
+    kp:'kp', wfl:'wfl', baujahr:'baujahr', adresse:'adresse',
+    brw:'brw', gflaeche:'gflaeche', mea_z:'mea_z', mea_n:'mea_n',
+    stp:'stp', m_qm:'m_qm', nhk:'nhk'
+  };
+  const applied = [];
+  for(const [pk, fid] of Object.entries(map)){
+    const v = params.get(pk);
+    if(v !== null && v !== ''){
+      const el = document.getElementById(fid);
+      if(el){
+        el.value = v;
+        applied.push(fid);
+        if(fid==='baujahr') document.getElementById('awm').dataset.auto = '1';
+      }
+    }
+  }
+  if(!applied.length) return;
+  // notify + offer URL cleanup
+  const notice = document.createElement('div');
+  notice.className = 'alert alert-good';
+  notice.style.margin = '10px 0';
+  notice.innerHTML = `✅ <strong>${applied.length} Wert${applied.length>1?'e':''} aus URL übernommen:</strong> ${applied.join(', ')}. ` +
+    `<a href="#" id="url-clean">URL bereinigen</a>`;
+  const container = document.querySelector('.container');
+  container.insertBefore(notice, container.firstChild);
+  document.getElementById('url-clean').addEventListener('click', (e)=>{
+    e.preventDefault();
+    window.history.replaceState({}, '', window.location.pathname);
+    notice.remove();
+  });
+  save(); calcAll();
+}
+
+function setupBookmarklet(){
+  // Bookmarklet: extracts from current page (innerText + JSON-LD + meta) and opens immo-tool with URL params
+  const target = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+  const bm = "javascript:(function(){var T=document.body.innerText||'';document.querySelectorAll('script[type=\"application/ld+json\"]').forEach(function(s){T+='\\n'+s.textContent});document.querySelectorAll('meta').forEach(function(m){var n=m.getAttribute('property')||m.getAttribute('name');var c=m.getAttribute('content');if(n&&c)T+='\\n'+n+': '+c});function N(s){if(!s)return'';s=String(s).trim();if(/,\\d+$/.test(s)&&/\\./.test(s))return s.replace(/\\./g,'').replace(',','.');if(/^\\d{1,3}(\\.\\d{3})+$/.test(s))return s.replace(/\\./g,'');return s.replace(',','.')}function F(re){var x=T.match(re);return x?x[1]:''}var p=new URLSearchParams();var kp=F(/Kaufpreis[^0-9\\u20ac]{0,40}(?:\\u20ac|EUR)?[^0-9\\u20ac]{0,10}(\\d{1,3}(?:[.,]\\d{3})+(?:[.,]\\d{2})?|\\d{4,})/i)||F(/\"price\"\\s*:\\s*\"?(\\d+(?:[.,]\\d+)?)\"?/);if(kp)p.set('kp',N(kp));var wfl=F(/Wohn(?:nutz|-)?fl(?:\\u00e4|ae)che[^0-9]{0,30}(\\d{1,4}(?:[.,]\\d+)?)\\s*(?:m\\u00b2|qm|m2)/i);if(wfl)p.set('wfl',N(wfl));var bj=F(/(?:Baujahr|erbaut|errichtet|fertig\\s*gestellt|Bezugsfertig)[^\\d]{0,20}(1[89]\\d{2}|20\\d{2})/i);if(bj)p.set('baujahr',bj);var stp=F(/(?:Stellpl(?:a|\\u00e4)tze|Tiefgarage|Garage)[^\\d]{0,15}(\\d{1,2})/i);if(stp)p.set('stp',stp);var qm=F(/(\\d{1,3}(?:[.,]\\d+)?)\\s*(?:\\u20ac|EUR)?\\s*\\/\\s*m\\u00b2[^\\.]{0,30}(?:Kalt|Miete|Nettokalt)/i);if(qm)p.set('m_qm',N(qm));var adrM=T.match(/([A-Z\\u00c4\\u00d6\\u00dc][A-Za-z\\u00e4\\u00f6\\u00fc\\u00df\\u00c4\\u00d6\\u00dc\\-\\.]{2,30}(?:stra\\u00dfe|str\\.|weg|allee|platz|gasse|ring|damm|ufer|hof|chaussee))\\s+(\\d{1,4}[a-zA-Z]?)\\s*,?\\s*(\\d{5})\\s+([A-Z\\u00c4\\u00d6\\u00dc][A-Za-z\\u00e4\\u00f6\\u00fc\\u00df\\u00c4\\u00d6\\u00dc\\-]+(?:[ \\-][A-Z\\u00c4\\u00d6\\u00dc][A-Za-z\\u00e4\\u00f6\\u00fc\\u00df\\u00c4\\u00d6\\u00dc\\-]+)?)/);if(adrM)p.set('adresse',adrM[1]+' '+adrM[2]+', '+adrM[3]+' '+adrM[4]);window.open('" + target + "?'+p.toString(),'_blank')})();";
+  const link = document.getElementById('bm-link');
+  if(link){
+    link.setAttribute('href', bm);
+    link.addEventListener('click', (e)=>{
+      e.preventDefault();
+      alert('Dies ist ein Lesezeichen-Link. Ziehe ihn per Drag&Drop in deine Lesezeichenleiste — klick ihn dann auf einer Immo-Anzeigenseite an.');
+    });
+  }
+}
+
 function setupPdfDrop(){
   const dz = document.getElementById('pdf-drop');
   const inp = document.getElementById('pdf-file');
@@ -1709,6 +1808,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
   if(!document.getElementById('nkp_grest').value) onBundeslandChange();
   calcAll();
   setupPdfDrop();
+  setupBookmarklet();
+  applyUrlParams();
 
   // mark manuelle Override für AWM/NHK wenn User selbst tippt
   ['awm','nhk'].forEach(id=>{

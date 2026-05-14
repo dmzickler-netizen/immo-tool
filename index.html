@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Immobilien-Investitions-Cockpit</title>
+<style>
+  :root{
+    --bg:#f4f6f9;
+    --card:#ffffff;
+    --ink:#1a2540;
+    --ink2:#475569;
+    --muted:#94a3b8;
+    --border:#e2e8f0;
+    --primary:#1e3a5f;
+    --primary2:#2c5282;
+    --accent:#d97706;
+    --accent2:#f59e0b;
+    --good:#16a34a;
+    --warn:#d97706;
+    --bad:#dc2626;
+    --info:#0369a1;
+    --soft-good:#dcfce7;
+    --soft-warn:#fef3c7;
+    --soft-bad:#fee2e2;
+    --soft-info:#e0f2fe;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45;-webkit-font-smoothing:antialiased}
+  .header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary2) 100%);color:#fff;padding:18px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+  .header h1{margin:0 0 4px;font-size:22px;font-weight:600;letter-spacing:-0.2px}
+  .header .sub{font-size:13px;opacity:0.85}
+  .nav-bar{background:#fff;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px;padding:6px 16px;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .nav-btn{background:transparent;border:none;padding:10px 14px;font-size:13.5px;color:var(--ink2);cursor:pointer;border-radius:6px;font-weight:500;transition:all 0.12s;white-space:nowrap}
+  .nav-btn:hover{background:#f1f5f9;color:var(--ink)}
+  .nav-btn.active{background:var(--primary);color:#fff}
+  .container{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
+  .tab{display:none}
+  .tab.active{display:block}
+  .grid{display:grid;gap:14px}
+  .grid-2{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 18px 16px;box-shadow:0 1px 3px rgba(15,23,42,0.04)}
+  .card h2{margin:0 0 14px;font-size:16px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--border);padding-bottom:8px}
+  .card h3{margin:14px 0 8px;font-size:14px;font-weight:600;color:var(--ink2)}
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+  .field label{font-size:12px;color:var(--ink2);font-weight:500}
+  .field .hint{font-size:11px;color:var(--muted);margin-top:2px}
+  input[type=text],input[type=number],input[type=date],select{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink);transition:border 0.12s}
+  input:focus,select:focus{outline:none;border-color:var(--primary2);box-shadow:0 0 0 3px rgba(44,82,130,0.12)}
+  input[readonly]{background:#f8fafc;color:var(--ink2)}
+  .row{display:flex;gap:8px;align-items:center}
+  .row > *{flex:1}
+  .row > .unit{flex:0 0 auto;font-size:12px;color:var(--muted);min-width:32px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+  .kpi{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:11px 12px}
+  .kpi .lab{font-size:11px;color:var(--ink2);font-weight:500;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px}
+  .kpi .val{font-size:19px;font-weight:600;color:var(--ink)}
+  .kpi .sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .kpi.good{background:var(--soft-good);border-color:#86efac}
+  .kpi.good .val{color:#166534}
+  .kpi.warn{background:var(--soft-warn);border-color:#fcd34d}
+  .kpi.warn .val{color:#92400e}
+  .kpi.bad{background:var(--soft-bad);border-color:#fca5a5}
+  .kpi.bad .val{color:#991b1b}
+  .kpi.info{background:var(--soft-info);border-color:#7dd3fc}
+  .kpi.info .val{color:#075985}
+  .alert{padding:10px 12px;border-radius:8px;font-size:13px;margin:10px 0;border-left:4px solid}
+  .alert-info{background:var(--soft-info);border-color:var(--info);color:#075985}
+  .alert-good{background:var(--soft-good);border-color:var(--good);color:#166534}
+  .alert-warn{background:var(--soft-warn);border-color:var(--warn);color:#92400e}
+  .alert-bad{background:var(--soft-bad);border-color:var(--bad);color:#991b1b}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{background:#f1f5f9;text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);font-weight:600;color:var(--ink2);font-size:12px;text-transform:uppercase;letter-spacing:0.2px}
+  td{padding:7px 10px;border-bottom:1px solid var(--border)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr:hover td{background:#f8fafc}
+  .footer{padding:20px 0;text-align:center;font-size:11px;color:var(--muted)}
+  .actions{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+  .btn{background:var(--primary);color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500}
+  .btn:hover{background:var(--primary2)}
+  .btn-sec{background:#fff;color:var(--primary);border:1px solid var(--border)}
+  .btn-sec:hover{background:#f1f5f9}
+  .pill{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+  .pill.good{background:var(--soft-good);color:#166534}
+  .pill.warn{background:var(--soft-warn);color:#92400e}
+  .pill.bad{background:var(--soft-bad);color:#991b1b}
+  details{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:8px 0;background:#fafbfc}
+  summary{cursor:pointer;font-weight:500;color:var(--primary);font-size:13.5px}
+  details[open] summary{margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px}
+  .legend{font-size:12px;color:var(--ink2);background:#f8fafc;padding:8px 12px;border-radius:6px;border-left:3px solid var(--primary2);margin:8px 0}
+  .group{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:700px){.group{grid-template-columns:1fr}}
+  .disclaimer{background:#fef3c7;border:1px solid #fcd34d;color:#78350f;padding:8px 12px;border-radius:6px;font-size:12px;margin-bottom:14px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;margin-bottom:10px;align-items:center}
+  .toolbar .label{font-size:12px;color:var(--ink2);margin-right:6px}
+  .toolbar input[type=text]{font-size:12px;padding:4px 8px}
+  .source{font-size:11px;color:var(--muted);font-style:italic;margin-top:6px}
+  .chart-wrap{margin-top:10px;overflow-x:auto}
+  .chart-wrap svg{display:block;min-width:600px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏠 Immobilien-Investitions-Cockpit</h1>
+  <div class="sub">Profitabilitäts-Analyse · Grund &amp; Boden (BMF-light) · Sanierung &amp; Mietpreisbremse · Finanzierung &amp; Hochrechnung</div>
+</div>
+
+<nav class="nav-bar">
+  <button class="nav-btn active" data-tab="objekt" onclick="switchTab('objekt')">📋 Objekt &amp; Kauf</button>
+  <button class="nav-btn" data-tab="grund" onclick="switchTab('grund')">🌍 Grund &amp; Boden</button>
+  <button class="nav-btn" data-tab="miete" onclick="switchTab('miete')">🏘️ Miete &amp; Bewirtsch.</button>
+  <button class="nav-btn" data-tab="san" onclick="switchTab('san')">🔨 Sanierung &amp; Mietpreisbremse</button>
+  <button class="nav-btn" data-tab="bank" onclick="switchTab('bank')">💰 Bank &amp; Finanzierung</button>
+  <button class="nav-btn" data-tab="kpi" onclick="switchTab('kpi')">📊 Kennzahlen &amp; Cashflow</button>
+  <button class="nav-btn" data-tab="verlauf" onclick="switchTab('verlauf')">📈 Verlauf 30 Jahre</button>
+</nav>
+
+<div class="container">
+
+  <div class="toolbar">
+    <span class="label">Werte werden automatisch im Browser gespeichert.</span>
+    <button class="btn btn-sec" onclick="exportData()">⬇️ Export JSON</button>
+    <button class="btn btn-sec" onclick="document.getElementById('importFile').click()">⬆️ Import JSON</button>
+    <input id="importFile" type="file" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="btn btn-sec" onclick="resetData()">🔄 Reset</button>
+  </div>
+
+  <div class="disclaimer">⚠️ <strong>Keine Steuer-, Rechts- oder Finanzberatung.</strong> Ergebnisse sind orientierende Kalkulationen. Für verbindliche Aussagen Steuerberater bzw. Bank konsultieren. Mietpreisbremse-Hebel: keine Garantie der Anerkennung — nur Gerichte können verbindlich entscheiden.</div>
+
+  <!-- ===================== TAB: OBJEKT ===================== -->
+  <div class="tab active" id="tab-objekt">
+    <div class="grid grid-2">
+
+      <div class="card">
+        <h2>Objekt</h2>
+        <div class="field"><label>Adresse / Beschreibung</label>
+          <input type="text" id="adresse" placeholder="z.B. Musterstr. 11, 12345 Berlin" oninput="save();calcAll()">
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>Wohnfläche (m²)</label><input type="number" id="wfl" step="0.1" oninput="save();calcAll()"></div>
+          <div class="field"><label>Stellplätze (Anzahl)</label><input type="number" id="stp" step="1" min="0" oninput="save();calcAll()"></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>Kaufdatum</label><input type="date" id="kaufdatum" oninput="save();calcAll()"></div>
+          <div class="field"><label>Baujahr (für AfA)</label><input type="number" id="baujahr" step="1" min="1800" max="2100" oninput="save();calcAll()"></div>
+        </div>
+        <div class="field"><label>Bundesland (für Grunderwerbsteuer)</label>
+          <select id="bundesland" onchange="onBundeslandChange();save();calcAll()">
+            <option value="BW">Baden-Württemberg (5,0 %)</option>
+            <option value="BY">Bayern (3,5 %)</option>
+            <option value="BE" selected>Berlin (6,0 %)</option>
+            <option value="BB">Brandenburg (6,5 %)</option>
+            <option value="HB">Bremen (5,0 %)</option>
+            <option value="HH">Hamburg (5,5 %)</option>
+            <option value="HE">Hessen (6,0 %)</option>
+            <option value="MV">Mecklenburg-Vorpommern (6,0 %)</option>
+            <option value="NI">Niedersachsen (5,0 %)</option>
+            <option value="NW">Nordrhein-Westfalen (6,5 %)</option>
+            <option value="RP">Rheinland-Pfalz (5,0 %)</option>
+            <option value="SL">Saarland (6,5 %)</option>
+            <option value="SN">Sachsen (5,5 %)</option>
+            <option value="ST">Sachsen-Anhalt (5,0 %)</option>
+            <option value="SH">Schleswig-Holstein (6,5 %)</option>
+            <option value="TH">Thüringen (6,5 %)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Kaufpreis &amp; Nebenkosten</h2>
+        <div class="field"><label>Kaufpreis (€)</label>
+          <input type="number" id="kp" step="1000" oninput="save();calcAll()" placeholder="z.B. 250000">
+          <div class="hint">Pro m² Wohnfläche: <span id="kp_pro_qm">–</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Nebenkosten</th><th class="num">%</th><th class="num">€</th></tr></thead>
+          <tbody>
+            <tr><td>Grunderwerbsteuer</td>
+              <td class="num"><input type="number" id="nkp_grest" step="0.1" style="width:70px;text-align:right" oninput="save();calcAll()"></td>
+              <td class="num" id="nke_grest">0</td></tr>
+            <tr><td>Notar</td>
+              <td class="num"><input type="number" id="nkp_notar" step="0.1" value="1.5" style="width:70px;text-align:right" oninput="save();calcAll()"></td>
+              <td class="num" id="nke_notar">0</td></tr>
+            <tr><td>Grundbuch</td>
+              <td class="num"><input type="number" id="nkp_gb" step="0.1" value="0.5" style="width:70px;text-align:right" oninput="save();calcAll()"></td>
+              <td class="num" id="nke_gb">0</td></tr>
+            <tr><td>Makler (inkl. USt)</td>
+              <td class="num"><input type="number" id="nkp_makler" step="0.01" value="3.57" style="width:70px;text-align:right" oninput="save();calcAll()"></td>
+              <td class="num" id="nke_makler">0</td></tr>
+            <tr><td>Sonstiges</td>
+              <td class="num"><input type="number" id="nkp_sonst" step="0.1" value="0" style="width:70px;text-align:right" oninput="save();calcAll()"></td>
+              <td class="num" id="nke_sonst">0</td></tr>
+            <tr style="font-weight:600;background:#f1f5f9"><td>Summe Nebenkosten</td><td class="num" id="nkp_sum">0 %</td><td class="num" id="nke_sum">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Zusätzliche Anfangsinvestitionen</h2>
+        <div class="hint" style="margin-bottom:10px;color:var(--ink2);font-size:12px">
+          Reine Investitionen <em>vor</em> Sanierungsmaßnahmen — z.B. Küche, Möbel. Sanierungs-/Modernisierungskosten besser im Tab <strong>Sanierung</strong> erfassen (für die Mietpreisbremse-Bewertung).
+        </div>
+        <table>
+          <thead><tr><th>Position</th><th class="num">Kosten (€)</th><th>Anmerkung</th></tr></thead>
+          <tbody id="inv_body">
+            <tr><td><input type="text" value="Küche" oninput="save();calcAll()"></td><td class="num"><input type="number" step="100" value="0" class="inv_kost" style="width:100px;text-align:right" oninput="save();calcAll()"></td><td><input type="text" placeholder="Notiz" oninput="save();calcAll()"></td></tr>
+            <tr><td><input type="text" value="Sonstiges" oninput="save();calcAll()"></td><td class="num"><input type="number" step="100" value="0" class="inv_kost" style="width:100px;text-align:right" oninput="save();calcAll()"></td><td><input type="text" placeholder="Notiz" oninput="save();calcAll()"></td></tr>
+            <tr><td><input type="text" placeholder="z.B. Möbel" oninput="save();calcAll()"></td><td class="num"><input type="number" step="100" value="0" class="inv_kost" style="width:100px;text-align:right" oninput="save();calcAll()"></td><td><input type="text" placeholder="Notiz" oninput="save();calcAll()"></td></tr>
+          </tbody>
+          <tfoot><tr style="font-weight:600;background:#f1f5f9"><td>Summe</td><td class="num" id="inv_sum">0 €</td><td></td></tr></tfoot>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Investitions-Übersicht</h2>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="lab">Kaufpreis</div><div class="val" id="ov_kp">0 €</div></div>
+          <div class="kpi"><div class="lab">+ Nebenkosten</div><div class="val" id="ov_nk">0 €</div></div>
+          <div class="kpi"><div class="lab">+ Anfangsinvest.</div><div class="val" id="ov_inv">0 €</div></div>
+          <div class="kpi"><div class="lab">+ Sanierung</div><div class="val" id="ov_san">0 €</div></div>
+          <div class="kpi info"><div class="lab">Gesamtinvestition</div><div class="val" id="ov_total">0 €</div></div>
+          <div class="kpi"><div class="lab">€ pro m² Wfl.</div><div class="val" id="ov_qm">0 €</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== TAB: GRUND & BODEN ===================== -->
+  <div class="tab" id="tab-grund">
+    <div class="grid grid-2">
+
+      <div class="card">
+        <h2>Grundstück (BMF-Methodik vereinfacht)</h2>
+        <div class="legend">
+          Methodik angelehnt an die BMF-„Arbeitshilfe zur Kaufpreisaufteilung" (Fassung 01/2025).
+          Bei Eigentumswohnungen geht der anteilige Grundstückswert über den Miteigentumsanteil ein.
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>Grundstücksfläche gesamt (m²)</label><input type="number" id="gflaeche" step="1" oninput="save();calcAll()"></div>
+          <div class="field"><label>Bodenrichtwert (€/m²)</label><input type="number" id="brw" step="1" oninput="save();calcAll()" placeholder="aus BORIS-Auskunft"></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>Miteigentumsanteil – Zähler</label><input type="number" id="mea_z" step="1" placeholder="z.B. 100" oninput="save();calcAll()"></div>
+          <div class="field"><label>Miteigentumsanteil – Nenner</label><input type="number" id="mea_n" step="1" placeholder="z.B. 1000" oninput="save();calcAll()"></div>
+        </div>
+        <div class="hint" style="font-size:12px;color:var(--ink2);margin-top:6px">Leer lassen, wenn ganzes Grundstück (kein WEG).</div>
+
+        <div class="kpi" style="margin-top:14px"><div class="lab">Anteiliger Bodenwert</div>
+          <div class="val" id="bw">0 €</div>
+          <div class="sub" id="bw_calc">Fläche × BRW × Miteigentumsanteil</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Gebäudewert (vereinfachte Schätzung)</h2>
+        <div class="legend">
+          Beim BMF-Tool wird das Gebäude über NHK 2010 (Normalherstellungskosten) + Alterswertminderung + Regionalfaktor + Baupreisindex bewertet.
+          Hier nutzen wir <strong>Standard-NHK</strong> als pragmatische Näherung; bei Gutachten/Steuerberater-Aufteilung diese Werte überschreiben.
+        </div>
+        <div class="field"><label>Gebäudetyp (Standard-NHK)</label>
+          <select id="geb_typ" onchange="save();calcAll()">
+            <option value="mfh_einfach" data-nhk="1100">MFH einfacher Standard (~1.100 €/m²)</option>
+            <option value="mfh_mittel" data-nhk="1400" selected>MFH mittlerer Standard (~1.400 €/m²)</option>
+            <option value="mfh_gut" data-nhk="1700">MFH gehobener Standard (~1.700 €/m²)</option>
+            <option value="efh_einfach" data-nhk="1200">EFH/ZFH einfach (~1.200 €/m²)</option>
+            <option value="efh_mittel" data-nhk="1600">EFH/ZFH mittel (~1.600 €/m²)</option>
+            <option value="efh_gut" data-nhk="2000">EFH/ZFH gehoben (~2.000 €/m²)</option>
+            <option value="we_mittel" data-nhk="1500">Eigentumswohnung mittel (~1.500 €/m²)</option>
+            <option value="we_gut" data-nhk="1900">Eigentumswohnung gehoben (~1.900 €/m²)</option>
+            <option value="manuell" data-nhk="0">Manuell eingeben</option>
+          </select>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>NHK €/m² (Wohnfläche)</label><input type="number" id="nhk" step="50" oninput="save();calcAll()"></div>
+          <div class="field"><label>Alterswertminderung (%)</label><input type="number" id="awm" step="1" min="0" max="100" oninput="save();calcAll()">
+            <div class="hint">automatisch aus Baujahr (linear 80 J. ND), manuell anpassbar</div>
+          </div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>Regionalfaktor</label><input type="number" id="reg_f" step="0.01" value="1.0" oninput="save();calcAll()"></div>
+          <div class="field"><label>Baupreisindex (Faktor)</label><input type="number" id="bpi_f" step="0.01" value="1.50" oninput="save();calcAll()">
+            <div class="hint">Verhältnis aktueller Baupreis zu NHK-2010-Basis</div>
+          </div>
+        </div>
+        <div class="kpi" style="margin-top:10px"><div class="lab">Geschätzter Gebäudewert</div>
+          <div class="val" id="gw">0 €</div>
+          <div class="sub" id="gw_calc">Wfl × NHK × (1-AWM) × Reg × BPI</div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>Kaufpreis-Aufteilung Grund vs. Gebäude (AfA-Basis)</h2>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="lab">Bodenwert</div><div class="val" id="kpa_bw">0 €</div></div>
+          <div class="kpi"><div class="lab">Gebäudewert</div><div class="val" id="kpa_gw">0 €</div></div>
+          <div class="kpi info"><div class="lab">Anteil Gebäude</div><div class="val" id="kpa_anteil_geb">0 %</div><div class="sub" id="kpa_anteil_grund">Anteil Grund: 0 %</div></div>
+          <div class="kpi"><div class="lab">AfA-Basis (Gebäude)</div><div class="val" id="afa_basis">0 €</div><div class="sub">= Anteil Gebäude × (KP + Nebenkosten)</div></div>
+          <div class="kpi"><div class="lab">AfA-Satz</div><div class="val">
+            <select id="afa_satz" onchange="save();calcAll()" style="font-size:18px;padding:2px 4px;border:none;background:transparent;font-weight:600">
+              <option value="0.02">2,0 % (Standard ab Bj 1925)</option>
+              <option value="0.025">2,5 % (vor Bj 1925)</option>
+              <option value="0.03">3,0 % (Neubau ab 2023)</option>
+              <option value="0.04">4,0 % (Sonder-AfA)</option>
+            </select></div></div>
+          <div class="kpi good"><div class="lab">AfA p.a.</div><div class="val" id="afa_pa">0 €</div></div>
+        </div>
+        <div class="alert alert-info" id="kpa_warn" style="display:none"></div>
+        <div class="source">Bodenrichtwert prüfen über <strong>BORIS</strong> (Geoportal Bundesländer) oder örtlichen Gutachterausschuss. Bei Streit mit Finanzamt: BFH-Urteil IX R 26/19 — BMF-Arbeitshilfe darf nicht als alleinige Grundlage durchgesetzt werden, qualifiziertes Gutachten möglich.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB: MIETE ===================== -->
+  <div class="tab" id="tab-miete">
+    <div class="grid grid-2">
+
+      <div class="card">
+        <h2>Mieteinnahmen (Monat)</h2>
+        <div class="grid grid-2">
+          <div class="field"><label>Kaltmiete (€/m² Wohnfläche)</label><input type="number" id="m_qm" step="0.1" oninput="save();calcAll()"></div>
+          <div class="field"><label>Kaltmiete gesamt (€)</label><input type="number" id="m_ges" step="10" readonly></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>+ Stellplatzmiete gesamt (€)</label><input type="number" id="m_stp" step="5" oninput="save();calcAll()"></div>
+          <div class="field"><label>+ Sonstige Miete (€)</label><input type="number" id="m_sonst" step="5" oninput="save();calcAll()"></div>
+        </div>
+        <div class="kpi info" style="margin-top:8px"><div class="lab">Nettokaltmiete gesamt (Monat)</div><div class="val" id="m_nkm">0 €</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Bewirtschaftungskosten (Monat)</h2>
+        <h3>Umlagefähig (auf Mieter)</h3>
+        <div class="grid grid-2">
+          <div class="field"><label>Hausgeld umlagefähiger Anteil</label><input type="number" id="hg_um" step="10" oninput="save();calcAll()"></div>
+          <div class="field"><label>Grundsteuer</label><input type="number" id="grstr" step="5" oninput="save();calcAll()"></div>
+        </div>
+        <div class="field"><label>Sonstiges (umlagefähig)</label><input type="number" id="um_sonst" step="5" value="0" oninput="save();calcAll()"></div>
+
+        <h3>Nicht umlagefähig (= echte Kosten)</h3>
+        <div class="grid grid-2">
+          <div class="field"><label>Hausgeld nicht umlagefähig</label><input type="number" id="hg_nu" step="10" oninput="save();calcAll()">
+            <div class="hint">davon WEG-Rücklage in <span id="hg_weg_info">Hausgeld</span> enthalten</div></div>
+          <div class="field"><label>Eigene IH-Rücklage (€/m²/Jahr)</label><input type="number" id="ih_qm" step="1" value="10" oninput="save();calcAll()"></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>Kalk. Mietausfall (%)</label><input type="number" id="mausfall" step="0.5" value="3" oninput="save();calcAll()"></div>
+          <div class="field"><label>Verwaltung extern (€/Monat)</label><input type="number" id="verw" step="5" value="0" oninput="save();calcAll()"></div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>Übersicht</h2>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="lab">Warmmiete</div><div class="val" id="m_warm">0 €</div></div>
+          <div class="kpi"><div class="lab">Umlagefähige Kosten</div><div class="val" id="bk_um_sum">0 €</div></div>
+          <div class="kpi warn"><div class="lab">Nicht-umlagefähig (Kosten)</div><div class="val" id="bk_nu_sum">0 €</div></div>
+          <div class="kpi"><div class="lab">In % der Nettokaltmiete</div><div class="val" id="bk_quote">0 %</div></div>
+        </div>
+
+        <h3>Prognose-Annahmen</h3>
+        <div class="grid grid-3">
+          <div class="field"><label>Mietsteigerung p.a. (%)</label><input type="number" id="ms_pa" step="0.5" value="2.0" oninput="save();calcAll()"></div>
+          <div class="field"><label>Kostensteigerung p.a. (%)</label><input type="number" id="ks_pa" step="0.5" value="2.5" oninput="save();calcAll()"></div>
+          <div class="field"><label>Wertsteigerung p.a. (%)</label><input type="number" id="ws_pa" step="0.5" value="2.0" oninput="save();calcAll()"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB: SANIERUNG ===================== -->
+  <div class="tab" id="tab-san">
+    <div class="grid grid-2">
+
+      <div class="card">
+        <h2>Sanierungs- &amp; Modernisierungs-Positionen</h2>
+        <div class="legend">
+          Erfasse alle Investitionen, die als <strong>Modernisierung</strong> i.S.d. § 555b BGB zählen könnten (energetisch, Gebrauchswerterhöhung).
+          Reine Schönheitsreparaturen/Instandhaltung getrennt davon erfassen.
+        </div>
+        <table>
+          <thead><tr><th>Gewerk</th><th class="num">Kosten (€)</th><th>Typ</th></tr></thead>
+          <tbody id="san_body">
+            <tr><td><input type="text" value="Bad komplett" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m">Modernisierung</option><option value="e">Energetisch</option><option value="i">Instandhaltung</option></select></td></tr>
+            <tr><td><input type="text" value="Küche / Pantry" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m" selected>Modernisierung</option><option value="e">Energetisch</option><option value="i">Instandhaltung</option></select></td></tr>
+            <tr><td><input type="text" value="Elektrik (komplett)" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m" selected>Modernisierung</option><option value="e">Energetisch</option><option value="i">Instandhaltung</option></select></td></tr>
+            <tr><td><input type="text" value="Heizung" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m">Modernisierung</option><option value="e" selected>Energetisch</option><option value="i">Instandhaltung</option></select></td></tr>
+            <tr><td><input type="text" value="Fenster (3-fach)" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m">Modernisierung</option><option value="e" selected>Energetisch</option><option value="i">Instandhaltung</option></select></td></tr>
+            <tr><td><input type="text" value="Dämmung / Fassade" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m">Modernisierung</option><option value="e" selected>Energetisch</option><option value="i">Instandhaltung</option></select></td></tr>
+            <tr><td><input type="text" value="Bodenbelag" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m" selected>Modernisierung</option><option value="e">Energetisch</option><option value="i">Instandhaltung</option></select></td></tr>
+            <tr><td><input type="text" value="Maler / Tapeten" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m">Modernisierung</option><option value="e">Energetisch</option><option value="i" selected>Instandhaltung</option></select></td></tr>
+            <tr><td><input type="text" placeholder="Sonstiges" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m" selected>Modernisierung</option><option value="e">Energetisch</option><option value="i">Instandhaltung</option></select></td></tr>
+            <tr><td><input type="text" placeholder="Sonstiges" oninput="save();calcAll()"></td>
+                <td class="num"><input type="number" step="500" value="0" class="san_kost" style="width:110px;text-align:right" oninput="save();calcAll()"></td>
+                <td><select class="san_typ" onchange="save();calcAll()"><option value="m" selected>Modernisierung</option><option value="e">Energetisch</option><option value="i">Instandhaltung</option></select></td></tr>
+          </tbody>
+          <tfoot>
+            <tr style="font-weight:600;background:#f8fafc"><td>Summe Modernisierung</td><td class="num" id="san_mod_sum">0 €</td><td></td></tr>
+            <tr style="font-weight:600;background:#f8fafc"><td>Summe Energetisch</td><td class="num" id="san_en_sum">0 €</td><td></td></tr>
+            <tr style="font-weight:600;background:#f8fafc"><td>Summe Instandhaltung</td><td class="num" id="san_ih_sum">0 €</td><td></td></tr>
+            <tr style="font-weight:700;background:#f1f5f9"><td>GESAMT-SANIERUNG</td><td class="num" id="san_total">0 €</td><td></td></tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Datums-Tracking</h2>
+        <div class="field"><label>Übergang Nutzen &amp; Lasten</label><input type="date" id="d_nl" oninput="save();calcAll()"></div>
+        <div class="field"><label>Beginn Sanierung</label><input type="date" id="d_san_start" oninput="save();calcAll()"></div>
+        <div class="field"><label>Fertigstellung Sanierung</label><input type="date" id="d_san_ende" oninput="save();calcAll()"></div>
+        <div class="field"><label>Erstvermietung nach Sanierung</label><input type="date" id="d_erstvm" oninput="save();calcAll()"></div>
+
+        <div class="alert alert-info" id="zeitachse" style="margin-top:12px;font-size:12.5px">–</div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>Mietpreisbremse-Hebel (§ 556f BGB) – „umfassende Modernisierung"</h2>
+        <div class="legend">
+          Nach <strong>BGH VIII ZR 7/19</strong> liegt eine umfassende Modernisierung vor, wenn die Investition <strong>≈ ⅓ der Aufwendungen für eine vergleichbare Neubauwohnung</strong> erreicht UND die Wohnung in einen <em>neubauähnlichen Zustand</em> versetzt wird (mehrere Gewerke: Heizung, Sanitär, Elektrik, Fenster, Dämmung, Grundriss).
+          <br><strong>Wichtig: Bezug ist der Neubau-/Gebäudewert, NICHT der Grundstückswert.</strong>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi"><div class="lab">Sanierung gesamt</div><div class="val" id="mp_san">0 €</div></div>
+          <div class="kpi"><div class="lab">Modernisierung + Energetisch</div><div class="val" id="mp_modern">0 €</div></div>
+          <div class="kpi"><div class="lab">⅓-Schwelle vom Neubau-Vergleichswert</div><div class="val" id="mp_schwelle_neu">0 €</div><div class="sub" id="mp_schwelle_neu_basis">Wfl × Neubau-NHK / 3</div></div>
+          <div class="kpi"><div class="lab">⅓-Schwelle vom Gebäudewert (Bestand)</div><div class="val" id="mp_schwelle_geb">0 €</div><div class="sub">aus Tab "Grund &amp; Boden"</div></div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top:10px">
+          <div class="field"><label>Neubau-Vergleichs-NHK (€/m² Wfl.)</label><input type="number" id="nhk_neu" step="50" value="2400" oninput="save();calcAll()">
+            <div class="hint">aktueller Neubau ~2.000–3.000 €/m² je Standard/Region</div></div>
+          <div class="field"><label>Wieviele Gewerke saniert?</label><input type="number" id="gewerke_n" min="0" step="1" value="0" oninput="save();calcAll()">
+            <div class="hint">BGH-Indikator: mind. 3–4 wesentliche Gewerke</div></div>
+        </div>
+
+        <div id="mp_result" style="margin-top:10px"></div>
+
+        <details style="margin-top:14px">
+          <summary>§ 559 BGB – Modernisierungsumlage (Mieterhöhung)</summary>
+          <div class="legend" style="margin-top:10px">
+            <strong>Bei bestehenden Mietverhältnissen:</strong> 8 % der reinen Modernisierungskosten p.a. auf Miete umlegbar (anteilige Wohnflächenberechnung). Bei energetischer Modernisierung gilt Kappungsgrenze 3 €/m² in 6 Jahren (bzw. 2 € bei niedrigen Mieten). Vorher Instandhaltungsanteil abziehen.
+          </div>
+          <div class="grid grid-3">
+            <div class="kpi"><div class="lab">Modernisierungs-Basis</div><div class="val" id="mod_basis">0 €</div><div class="sub">Mod + Energetisch</div></div>
+            <div class="kpi"><div class="lab">8 %-Umlage p.a.</div><div class="val" id="mod_umlage_pa">0 €</div></div>
+            <div class="kpi"><div class="lab">Mieterhöhung €/m²/Monat</div><div class="val" id="mod_qm">0 €</div></div>
+          </div>
+          <div class="alert alert-warn" id="kappung_warn" style="display:none"></div>
+        </details>
+
+        <details style="margin-top:8px">
+          <summary>§ 6 EStG – Anschaffungsnaher Aufwand (15 %-Grenze)</summary>
+          <div class="legend" style="margin-top:10px">
+            Sanierungskosten in den ersten <strong>3 Jahren</strong> nach Kauf, die <strong>&gt; 15 % der Anschaffungskosten Gebäude (netto)</strong> ausmachen, werden steuerlich als <em>anschaffungsnahe Herstellungskosten</em> behandelt: <strong>nur AfA (z.B. 2 %)</strong>, nicht sofort absetzbar.
+            <br>Unter der Schwelle → vollständig im Jahr der Zahlung als Werbungskosten abzugsfähig.
+          </div>
+          <div class="grid grid-3">
+            <div class="kpi"><div class="lab">15 %-Schwelle (Gebäudewert netto)</div><div class="val" id="ahk_schwelle">0 €</div></div>
+            <div class="kpi"><div class="lab">Sanierung gesamt (netto, bei 19 % USt)</div><div class="val" id="ahk_san_netto">0 €</div></div>
+            <div class="kpi" id="ahk_status_kpi"><div class="lab">Status</div><div class="val" id="ahk_status">–</div></div>
+          </div>
+          <div id="ahk_alert"></div>
+        </details>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== TAB: BANK ===================== -->
+  <div class="tab" id="tab-bank">
+    <div class="grid grid-2">
+
+      <div class="card">
+        <h2>Eigenkapital &amp; Darlehensbedarf</h2>
+        <div class="field"><label>Eigenkapital (€)</label><input type="number" id="ek" step="1000" oninput="save();calcAll()"></div>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="lab">Gesamtinvestition</div><div class="val" id="bk_total">0 €</div><div class="sub">KP + Nebenkosten + Anfangsinv. + Sanierung</div></div>
+          <div class="kpi info"><div class="lab">Darlehensbedarf</div><div class="val" id="bk_bedarf">0 €</div><div class="sub">= Gesamtinvestition − EK</div></div>
+          <div class="kpi"><div class="lab">EK-Quote</div><div class="val" id="bk_ekq">0 %</div></div>
+          <div class="kpi"><div class="lab">Beleihungsauslauf (LTV)</div><div class="val" id="bk_ltv">0 %</div><div class="sub">Darlehen / Verkehrswert</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Hauptdarlehen</h2>
+        <div class="grid grid-2">
+          <div class="field"><label>Darlehenssumme (€)</label><input type="number" id="d1_sum" step="1000" oninput="save();calcAll()">
+            <div class="hint"><a href="#" onclick="d1AutoFill();return false">Auto: = Darlehensbedarf</a></div></div>
+          <div class="field"><label>Zinssatz (% p.a.)</label><input type="number" id="d1_zins" step="0.05" value="4.0" oninput="save();calcAll()"></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>Anfangstilgung (% p.a.)</label><input type="number" id="d1_tilg" step="0.25" value="1.0" oninput="save();calcAll()"></div>
+          <div class="field"><label>Zinsbindung (Jahre)</label><input type="number" id="d1_zb" step="1" value="10" oninput="save();calcAll()"></div>
+        </div>
+        <div class="field"><label>Sondertilgung pro Jahr (€)</label><input type="number" id="d1_sonder" step="500" value="0" oninput="save();calcAll()">
+          <div class="hint">üblich: 5 % der Darlehenssumme p.a. erlaubt</div></div>
+        <div class="kpi-grid" style="margin-top:8px">
+          <div class="kpi"><div class="lab">Annuität / Monat</div><div class="val" id="d1_rate">0 €</div></div>
+          <div class="kpi"><div class="lab">Zinsen Jahr 1</div><div class="val" id="d1_z1">0 €</div></div>
+          <div class="kpi"><div class="lab">Tilgung Jahr 1</div><div class="val" id="d1_t1">0 €</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Zweites Darlehen (optional, z.B. KfW)</h2>
+        <div class="grid grid-2">
+          <div class="field"><label>Darlehenssumme (€)</label><input type="number" id="d2_sum" step="1000" value="0" oninput="save();calcAll()"></div>
+          <div class="field"><label>Zinssatz (% p.a.)</label><input type="number" id="d2_zins" step="0.05" value="2.5" oninput="save();calcAll()"></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>Anfangstilgung (% p.a.)</label><input type="number" id="d2_tilg" step="0.25" value="2.0" oninput="save();calcAll()"></div>
+          <div class="field"><label>Zinsbindung (Jahre)</label><input type="number" id="d2_zb" step="1" value="10" oninput="save();calcAll()"></div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="lab">Annuität / Monat</div><div class="val" id="d2_rate">0 €</div></div>
+          <div class="kpi"><div class="lab">Zinsen Jahr 1</div><div class="val" id="d2_z1">0 €</div></div>
+          <div class="kpi"><div class="lab">Tilgung Jahr 1</div><div class="val" id="d2_t1">0 €</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Finanzierungs-Übersicht</h2>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="lab">Gesamt-Darlehen</div><div class="val" id="bk_d_sum">0 €</div></div>
+          <div class="kpi"><div class="lab">Zinssatz gewichtet</div><div class="val" id="bk_zins_gew">–</div></div>
+          <div class="kpi"><div class="lab">Tilgung gewichtet</div><div class="val" id="bk_tilg_gew">–</div></div>
+          <div class="kpi info"><div class="lab">Kapitaldienst / Monat</div><div class="val" id="bk_kd">0 €</div></div>
+          <div class="kpi"><div class="lab">Kapitaldienst / Jahr</div><div class="val" id="bk_kd_jahr">0 €</div></div>
+          <div class="kpi"><div class="lab">Voraussichtl. Volltilgung</div><div class="val" id="bk_volltilg">–</div></div>
+        </div>
+        <h3>Restschuld (Hauptdarlehen, ohne Sondertilgung)</h3>
+        <table>
+          <thead><tr><th>nach Jahr</th><th class="num">Restschuld</th><th class="num">getilgt</th><th class="num">Zinsen kumul.</th></tr></thead>
+          <tbody id="rest_body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB: KENNZAHLEN ===================== -->
+  <div class="tab" id="tab-kpi">
+
+    <div class="card">
+      <h2>Steuerliche Annahmen</h2>
+      <div class="grid grid-4">
+        <div class="field"><label>Persönlicher Grenzsteuersatz (%)</label><input type="number" id="grenzst" step="1" value="42" oninput="save();calcAll()"></div>
+        <div class="field"><label>Soli berücksichtigen?</label><select id="soli" onchange="save();calcAll()"><option value="0">Nein</option><option value="1">Ja (5,5 % auf ESt)</option></select></div>
+        <div class="field"><label>Kirchensteuer (%)</label><input type="number" id="kist" step="1" value="0" oninput="save();calcAll()"></div>
+        <div class="field"><label>Effektiver Steuersatz</label><input type="number" id="grenz_eff" readonly></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Cashflow (Monat)</h2>
+      <div class="group">
+        <div>
+          <h3>Operativ (vor Steuer)</h3>
+          <table>
+            <tbody>
+              <tr><td>Nettokaltmiete</td><td class="num" id="cf_nkm">0 €</td></tr>
+              <tr><td>− Bewirtschaftung (nicht umlagef.)</td><td class="num" id="cf_bk">0 €</td></tr>
+              <tr><td>− Mietausfall (kalk.)</td><td class="num" id="cf_ausfall">0 €</td></tr>
+              <tr><td>− Verwaltung</td><td class="num" id="cf_verw">0 €</td></tr>
+              <tr><td>− Zinsen</td><td class="num" id="cf_zinsen">0 €</td></tr>
+              <tr><td>− Tilgung</td><td class="num" id="cf_tilg">0 €</td></tr>
+              <tr style="font-weight:700;background:#f1f5f9"><td>= Cashflow operativ</td><td class="num" id="cf_op">0 €</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3>Steuerlich</h3>
+          <table>
+            <tbody>
+              <tr><td>Nettokaltmiete</td><td class="num" id="st_nkm">0 €</td></tr>
+              <tr><td>− Bewirtschaftung (ohne eigene Rückl.)</td><td class="num" id="st_bk">0 €</td></tr>
+              <tr><td>− Verwaltung</td><td class="num" id="st_verw">0 €</td></tr>
+              <tr><td>− Zinsen</td><td class="num" id="st_zinsen">0 €</td></tr>
+              <tr><td>− AfA</td><td class="num" id="st_afa">0 €</td></tr>
+              <tr style="font-weight:600"><td>= zu versteuern</td><td class="num" id="st_zv">0 €</td></tr>
+              <tr><td>× Steuersatz</td><td class="num" id="st_satz">0 %</td></tr>
+              <tr style="font-weight:700;background:#f1f5f9"><td>= Steuerlast (+/−)</td><td class="num" id="st_last">0 €</td></tr>
+              <tr style="font-weight:700;background:var(--soft-good)"><td>= Cashflow nach Steuern</td><td class="num" id="cf_nach_st">0 €</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Kennzahlen heute</h2>
+      <div class="kpi-grid">
+        <div class="kpi" id="kpi_brmr"><div class="lab">Bruttomietrendite</div><div class="val" id="k_brmr">0 %</div><div class="sub">Jahreskaltmiete / Kaufpreis</div></div>
+        <div class="kpi" id="kpi_nmr"><div class="lab">Nettomietrendite</div><div class="val" id="k_nmr">0 %</div><div class="sub">(Jahres-NKM − Bewirt.) / Gesamtinvest.</div></div>
+        <div class="kpi"><div class="lab">Kaufpreis-Faktor</div><div class="val" id="k_faktor">0×</div><div class="sub">Kaufpreis / Jahreskaltmiete</div></div>
+        <div class="kpi" id="kpi_cf"><div class="lab">Cashflow operativ / Monat</div><div class="val" id="k_cfop">0 €</div></div>
+        <div class="kpi" id="kpi_cfst"><div class="lab">Cashflow nach Steuern / Monat</div><div class="val" id="k_cfst">0 €</div></div>
+        <div class="kpi" id="kpi_ekr"><div class="lab">Eigenkapitalrendite p.a.</div><div class="val" id="k_ekr">0 %</div><div class="sub">inkl. Tilgung + Wertsteig.</div></div>
+        <div class="kpi"><div class="lab">EK-Rendite ohne Wertsteig.</div><div class="val" id="k_ekr_ohne">0 %</div></div>
+        <div class="kpi"><div class="lab">Vermögenszuwachs p.a.</div><div class="val" id="k_vz">0 €</div><div class="sub">Tilgung + Wertsteigerung</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB: VERLAUF ===================== -->
+  <div class="tab" id="tab-verlauf">
+    <div class="card">
+      <h2>30-Jahres-Hochrechnung</h2>
+      <div class="legend">
+        Annahmen aus Tab „Miete &amp; Bewirtschaftung": Mietsteigerung, Kostensteigerung, Wertsteigerung.
+        Steuerlast und Cashflow werden jährlich neu berechnet (Zinsen sinken durch Tilgung, AfA bleibt konstant).
+      </div>
+      <div class="chart-wrap">
+        <svg id="chart" width="100%" height="280" viewBox="0 0 1000 280"></svg>
+      </div>
+      <div style="overflow-x:auto;margin-top:14px">
+        <table id="verlauf_tbl">
+          <thead><tr>
+            <th>Jahr</th>
+            <th class="num">Kaltmiete</th>
+            <th class="num">Bewirt.</th>
+            <th class="num">Zinsen</th>
+            <th class="num">Tilgung</th>
+            <th class="num">CF operativ</th>
+            <th class="num">Steuern</th>
+            <th class="num">CF n. Steuer</th>
+            <th class="num">Restschuld</th>
+            <th class="num">Imm.-Wert</th>
+            <th class="num">EK (Wert−Schuld)</th>
+          </tr></thead>
+          <tbody id="verlauf_body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">© KSchlieps/Dzickler · Immobilien-Investitions-Cockpit · Berechnungen orientierend, keine Beratung</div>
+</div>
+
+<script>
+'use strict';
+
+// ============ State ============
+const FIELDS = [
+  'adresse','wfl','stp','kaufdatum','baujahr','bundesland',
+  'kp','nkp_grest','nkp_notar','nkp_gb','nkp_makler','nkp_sonst',
+  'gflaeche','brw','mea_z','mea_n','geb_typ','nhk','awm','reg_f','bpi_f','afa_satz',
+  'm_qm','m_stp','m_sonst','hg_um','grstr','um_sonst','hg_nu','ih_qm','mausfall','verw',
+  'ms_pa','ks_pa','ws_pa',
+  'd_nl','d_san_start','d_san_ende','d_erstvm','nhk_neu','gewerke_n',
+  'ek','d1_sum','d1_zins','d1_tilg','d1_zb','d1_sonder','d2_sum','d2_zins','d2_tilg','d2_zb',
+  'grenzst','soli','kist'
+];
+const GREST_BL = {BW:5.0,BY:3.5,BE:6.0,BB:6.5,HB:5.0,HH:5.5,HE:6.0,MV:6.0,NI:5.0,NW:6.5,RP:5.0,SL:6.5,SN:5.5,ST:5.0,SH:6.5,TH:6.5};
+const STORAGE_KEY = 'immo-tool-state-v1';
+
+function num(id){ const e=document.getElementById(id); if(!e) return 0; const v=parseFloat(e.value); return isFinite(v)?v:0; }
+function str(id){ const e=document.getElementById(id); return e?e.value:''; }
+function fmt(n,d){ d = d===undefined?0:d; if(!isFinite(n)) return '–'; return n.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function eur(n,d){ return fmt(n,d===undefined?0:d) + ' €'; }
+function pct(n,d){ return fmt(n,d===undefined?1:d) + ' %'; }
+function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent = v; }
+function setVal(id,v){ const e=document.getElementById(id); if(e && document.activeElement!==e) e.value = v; }
+
+function switchTab(name){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.id==='tab-'+name));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function onBundeslandChange(){
+  const bl = str('bundesland');
+  if(GREST_BL[bl] !== undefined){
+    document.getElementById('nkp_grest').value = GREST_BL[bl];
+  }
+}
+
+function d1AutoFill(){
+  // set hauptdarlehen = darlehensbedarf
+  const bedarf = parseFloat(document.getElementById('bk_bedarf').dataset.raw || 0);
+  if(bedarf > 0){
+    document.getElementById('d1_sum').value = Math.round(bedarf - num('d2_sum'));
+    save(); calcAll();
+  }
+}
+
+// ============ Persistence ============
+function save(){
+  const state = {};
+  FIELDS.forEach(id=>{ const e=document.getElementById(id); if(e) state[id]=e.value; });
+  // dynamic tables
+  state.inv = [];
+  document.querySelectorAll('#inv_body tr').forEach(tr=>{
+    const txts = tr.querySelectorAll('input[type=text]');
+    const kost = tr.querySelector('.inv_kost');
+    state.inv.push({name:txts[0]?.value||'',kost:kost?.value||0,note:txts[1]?.value||''});
+  });
+  state.san = [];
+  document.querySelectorAll('#san_body tr').forEach(tr=>{
+    const name = tr.querySelector('input[type=text]')?.value||'';
+    const kost = tr.querySelector('.san_kost')?.value||0;
+    const typ = tr.querySelector('.san_typ')?.value||'m';
+    state.san.push({name,kost,typ});
+  });
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+
+function load(){
+  let state;
+  try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null'); } catch(e){ state=null; }
+  if(!state) return;
+  FIELDS.forEach(id=>{ if(state[id]!==undefined){ const e=document.getElementById(id); if(e) e.value=state[id]; } });
+  if(Array.isArray(state.inv)){
+    const trs = document.querySelectorAll('#inv_body tr');
+    state.inv.forEach((row,i)=>{
+      const tr = trs[i]; if(!tr) return;
+      const txts = tr.querySelectorAll('input[type=text]');
+      const kost = tr.querySelector('.inv_kost');
+      if(txts[0]) txts[0].value = row.name;
+      if(kost) kost.value = row.kost;
+      if(txts[1]) txts[1].value = row.note;
+    });
+  }
+  if(Array.isArray(state.san)){
+    const trs = document.querySelectorAll('#san_body tr');
+    state.san.forEach((row,i)=>{
+      const tr = trs[i]; if(!tr) return;
+      const txt = tr.querySelector('input[type=text]');
+      const kost = tr.querySelector('.san_kost');
+      const typ = tr.querySelector('.san_typ');
+      if(txt) txt.value = row.name;
+      if(kost) kost.value = row.kost;
+      if(typ) typ.value = row.typ;
+    });
+  }
+}
+
+function exportData(){
+  save();
+  const data = localStorage.getItem(STORAGE_KEY)||'{}';
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'immo-tool-'+(str('adresse')||'objekt').replace(/[^a-z0-9_-]/gi,'_')+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importData(e){
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{ localStorage.setItem(STORAGE_KEY, r.result); load(); calcAll(); }
+    catch(err){ alert('Datei konnte nicht gelesen werden.'); }
+  };
+  r.readAsText(f);
+}
+function resetData(){
+  if(!confirm('Alle Eingaben löschen?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// ============ Calculations ============
+
+function calcNebenkosten(){
+  const kp = num('kp');
+  const types = ['grest','notar','gb','makler','sonst'];
+  let sum_p=0, sum_e=0;
+  types.forEach(t=>{
+    const p = num('nkp_'+t);
+    const e = kp*p/100;
+    setText('nke_'+t, eur(e));
+    sum_p += p; sum_e += e;
+  });
+  setText('nkp_sum', pct(sum_p,2));
+  setText('nke_sum', eur(sum_e));
+  return sum_e;
+}
+
+function calcInvest(){
+  let sum = 0;
+  document.querySelectorAll('#inv_body .inv_kost').forEach(i=>{ sum += parseFloat(i.value)||0; });
+  setText('inv_sum', eur(sum));
+  return sum;
+}
+
+function calcSanierung(){
+  let m=0,e=0,i=0;
+  document.querySelectorAll('#san_body tr').forEach(tr=>{
+    const kost = parseFloat(tr.querySelector('.san_kost')?.value)||0;
+    const typ = tr.querySelector('.san_typ')?.value||'m';
+    if(typ==='m') m+=kost;
+    else if(typ==='e') e+=kost;
+    else i+=kost;
+  });
+  setText('san_mod_sum', eur(m));
+  setText('san_en_sum', eur(e));
+  setText('san_ih_sum', eur(i));
+  setText('san_total', eur(m+e+i));
+  return {mod:m, en:e, ih:i, total:m+e+i, modBasis:m+e};
+}
+
+function calcGrundBoden(kp, nk){
+  // Bodenwert
+  const gfl = num('gflaeche'), brw = num('brw');
+  const z = num('mea_z'), n = num('mea_n');
+  let mea = 1;
+  if(z>0 && n>0) mea = z/n;
+  const bw = gfl * brw * mea;
+  setText('bw', eur(bw));
+  setText('bw_calc', mea<1 ? `${gfl} m² × ${brw} €/m² × ${z}/${n}` : `${gfl} m² × ${brw} €/m²`);
+
+  // Baujahr → AWM Vorschlag
+  const bj = num('baujahr');
+  if(bj>0 && document.activeElement?.id !== 'awm'){
+    const heute = new Date().getFullYear();
+    const alter = Math.max(0, heute - bj);
+    const awm_auto = Math.min(70, Math.round(alter/80*100));
+    if(!document.getElementById('awm').value || document.getElementById('awm').dataset.auto==='1'){
+      document.getElementById('awm').value = awm_auto;
+      document.getElementById('awm').dataset.auto='1';
+    }
+  }
+
+  // NHK aus Dropdown setzen
+  const sel = document.getElementById('geb_typ');
+  const opt = sel.options[sel.selectedIndex];
+  const nhk_default = parseFloat(opt?.dataset.nhk||0);
+  if(nhk_default>0 && (!num('nhk') || document.getElementById('nhk').dataset.auto==='1') && document.activeElement?.id!=='nhk'){
+    document.getElementById('nhk').value = nhk_default;
+    document.getElementById('nhk').dataset.auto='1';
+  }
+
+  const wfl = num('wfl');
+  const nhk = num('nhk');
+  const awm = num('awm');
+  const reg = num('reg_f') || 1;
+  const bpi = num('bpi_f') || 1;
+  const gw = wfl * nhk * (1 - awm/100) * reg * bpi;
+  setText('gw', eur(gw));
+  setText('gw_calc', `${wfl} m² × ${nhk} €/m² × ${(1-awm/100).toFixed(2)} × ${reg} × ${bpi}`);
+
+  // Aufteilung
+  setText('kpa_bw', eur(bw));
+  setText('kpa_gw', eur(gw));
+  const total = bw + gw;
+  let anteil_gw = 0, anteil_bw = 0;
+  if(total>0){ anteil_gw = gw/total*100; anteil_bw = bw/total*100; }
+  setText('kpa_anteil_geb', pct(anteil_gw,1));
+  setText('kpa_anteil_grund', 'Anteil Grund: '+pct(anteil_bw,1));
+
+  // AfA-Basis = anteil_gw × (KP + NK)
+  const afa_basis = (anteil_gw/100) * (kp + nk);
+  setText('afa_basis', eur(afa_basis));
+  const afa_satz = num('afa_satz');
+  const afa_pa = afa_basis * afa_satz;
+  setText('afa_pa', eur(afa_pa));
+
+  // Warn
+  const warn = document.getElementById('kpa_warn');
+  if(bw>0 && gw>0){
+    if(anteil_bw > 50){
+      warn.style.display='block';
+      warn.className='alert alert-warn';
+      warn.innerHTML = `⚠️ Grundstücksanteil ${pct(anteil_bw,1)} ist sehr hoch — Finanzamt akzeptiert oft niedrigeren Grundstücksanteil, prüfe BRW/Gebäudewert.`;
+    } else if(anteil_bw < 10){
+      warn.style.display='block';
+      warn.className='alert alert-info';
+      warn.innerHTML = `ℹ️ Grundstücksanteil ${pct(anteil_bw,1)} ist sehr niedrig — günstig für AfA, aber FA könnte erhöhen wollen.`;
+    } else {
+      warn.style.display='none';
+    }
+  } else {
+    warn.style.display='none';
+  }
+
+  return {bw, gw, anteil_gw, anteil_bw, afa_basis, afa_pa};
+}
+
+function calcMiete(wfl){
+  const m_qm = num('m_qm');
+  const m_ges = wfl * m_qm;
+  setVal('m_ges', m_ges ? m_ges.toFixed(2) : '');
+  const stp = num('m_stp'), sonst = num('m_sonst');
+  const nkm = m_ges + stp + sonst;
+  setText('m_nkm', eur(nkm,2));
+
+  // Bewirtschaftung
+  const hg_um = num('hg_um'), grstr = num('grstr'), um_sonst = num('um_sonst');
+  const bk_um = hg_um + grstr + um_sonst;
+  const warm = nkm + bk_um;
+  setText('m_warm', eur(warm,2));
+  setText('bk_um_sum', eur(bk_um,2));
+
+  const hg_nu = num('hg_nu');
+  const ih_qm = num('ih_qm');
+  const ih_monat = wfl * ih_qm / 12;
+  const mausf = num('mausfall')/100 * warm;
+  const verw = num('verw');
+  const bk_nu = hg_nu + ih_monat + mausf + verw;
+  setText('bk_nu_sum', eur(bk_nu,2));
+  setText('bk_quote', nkm>0 ? pct(bk_nu/nkm*100,1) : '–');
+
+  return {nkm, warm, bk_um, bk_nu, ih_monat, mausf, hg_nu, verw};
+}
+
+// Bank
+function annuitaet(P, z_pa, t_pa){
+  // monatliche Rate als (z+t)/12 × P
+  return P * (z_pa + t_pa) / 12;
+}
+function restschuldNachJahren(P, z_pa, t_pa, n){
+  if(P<=0 || z_pa<=0) return P;
+  const rate = (z_pa + t_pa)/12 * P; // bleibt konstant
+  const i = z_pa/12;
+  let R = P;
+  for(let m=0; m<n*12; m++){
+    const z = R*i;
+    const t = rate - z;
+    R -= t;
+    if(R < 0) R = 0;
+    if(R === 0) break;
+  }
+  return R;
+}
+function volltilgungJahre(z_pa, t_pa){
+  if(t_pa<=0) return null;
+  // (1+z/12)^(12n) = (z+t)/t
+  const k = (z_pa + t_pa)/t_pa;
+  return Math.log(k) / Math.log(1 + z_pa/12) / 12;
+}
+function jahrZinsTilg(P, z_pa, t_pa){
+  // Jahres-Zinsen und Tilgung im ersten Jahr
+  const rate = (z_pa + t_pa)/12 * P;
+  const i = z_pa/12;
+  let R = P, zSum=0, tSum=0;
+  for(let m=0;m<12;m++){
+    const z = R*i;
+    const t = rate - z;
+    R -= t;
+    zSum += z; tSum += t;
+  }
+  return {zSum, tSum, rate, restEnde:R};
+}
+
+function calcBank(kp, nk, inv, san){
+  const total = kp + nk + inv + san;
+  setText('bk_total', eur(total));
+
+  const ek = num('ek');
+  const bedarf = Math.max(0, total - ek);
+  const elBedarf = document.getElementById('bk_bedarf');
+  elBedarf.textContent = eur(bedarf);
+  elBedarf.dataset.raw = bedarf;
+  setText('bk_ekq', total>0 ? pct(ek/total*100,1) : '–');
+
+  const d1 = num('d1_sum'), z1 = num('d1_zins')/100, t1 = num('d1_tilg')/100, zb1 = num('d1_zb');
+  const d2 = num('d2_sum'), z2 = num('d2_zins')/100, t2 = num('d2_tilg')/100, zb2 = num('d2_zb');
+
+  // D1
+  if(d1>0){
+    const r1 = annuitaet(d1, z1, t1);
+    const y1 = jahrZinsTilg(d1, z1, t1);
+    setText('d1_rate', eur(r1,2));
+    setText('d1_z1', eur(y1.zSum));
+    setText('d1_t1', eur(y1.tSum));
+  } else {
+    setText('d1_rate','–'); setText('d1_z1','–'); setText('d1_t1','–');
+  }
+  if(d2>0){
+    const r2 = annuitaet(d2, z2, t2);
+    const y2 = jahrZinsTilg(d2, z2, t2);
+    setText('d2_rate', eur(r2,2));
+    setText('d2_z1', eur(y2.zSum));
+    setText('d2_t1', eur(y2.tSum));
+  } else {
+    setText('d2_rate','–'); setText('d2_z1','–'); setText('d2_t1','–');
+  }
+
+  const dSum = d1 + d2;
+  setText('bk_d_sum', eur(dSum));
+  setText('bk_ltv', kp>0 ? pct(dSum/kp*100,1) : '–');
+
+  let zGew = 0, tGew = 0;
+  if(dSum>0){ zGew = (d1*z1 + d2*z2)/dSum; tGew = (d1*t1 + d2*t2)/dSum; }
+  setText('bk_zins_gew', dSum>0 ? pct(zGew*100,2) : '–');
+  setText('bk_tilg_gew', dSum>0 ? pct(tGew*100,2) : '–');
+
+  const kd_monat = annuitaet(d1, z1, t1) + annuitaet(d2, z2, t2);
+  setText('bk_kd', eur(kd_monat,2));
+  setText('bk_kd_jahr', eur(kd_monat*12));
+
+  // Volltilgung (gewichtet)
+  if(dSum>0 && tGew>0){
+    const j = volltilgungJahre(zGew, tGew);
+    const kaufJahr = new Date(str('kaufdatum') || Date.now()).getFullYear() || new Date().getFullYear();
+    setText('bk_volltilg', (kaufJahr + Math.ceil(j)) + ' (≈ '+j.toFixed(1)+' J.)');
+  } else setText('bk_volltilg','–');
+
+  // Restschuld-Tabelle (D1)
+  const tbody = document.getElementById('rest_body');
+  tbody.innerHTML = '';
+  if(d1>0){
+    [5,10,15,20,25,30].forEach(n=>{
+      const R = restschuldNachJahren(d1, z1, t1, n);
+      const getilgt = d1 - R;
+      // kumulierte Zinsen
+      const rate = annuitaet(d1,z1,t1);
+      const kumGes = rate * 12 * n;
+      const kumZ = kumGes - getilgt;
+      tbody.insertAdjacentHTML('beforeend', `<tr><td>${n} Jahre</td><td class="num">${eur(R)}</td><td class="num">${eur(getilgt)}</td><td class="num">${eur(Math.max(0,kumZ))}</td></tr>`);
+    });
+  }
+
+  // Jahres-Zinsen Tilgung gewichtet für Cashflow
+  return {dSum, zGew, tGew, kd_monat, d1,z1,t1, d2,z2,t2};
+}
+
+function calcSteuersatz(){
+  const g = num('grenzst')/100;
+  const soli = num('soli');
+  const k = num('kist')/100;
+  // ESt = g; +soli auf ESt (5,5% von ESt); +Kirchensteuer auf ESt
+  const eff = g + (soli ? g*0.055 : 0) + g*k;
+  setVal('grenz_eff', (eff*100).toFixed(2));
+  return eff;
+}
+
+function calcMietpreisbremse(san, gb){
+  const wfl = num('wfl');
+  const nhk_neu = num('nhk_neu');
+  const schwelle_neu = wfl * nhk_neu / 3;
+  const schwelle_geb = gb.gw / 3;
+
+  setText('mp_san', eur(san.total));
+  setText('mp_modern', eur(san.modBasis));
+  setText('mp_schwelle_neu', eur(schwelle_neu));
+  setText('mp_schwelle_neu_basis', `${wfl} m² × ${nhk_neu} €/m² ÷ 3`);
+  setText('mp_schwelle_geb', eur(schwelle_geb));
+
+  const gewerke = num('gewerke_n');
+  let resHtml = '';
+  if(san.modBasis<=0){
+    resHtml = '<div class="alert alert-info">Trage Modernisierungs-/Energetik-Positionen ein, um die Mietpreisbremse-Schwelle zu prüfen.</div>';
+  } else {
+    const erreicht_neu = san.modBasis >= schwelle_neu;
+    const erreicht_geb = san.modBasis >= schwelle_geb;
+    let cls='', icon='', txt='';
+    if(erreicht_neu && gewerke>=3){
+      cls='alert-good'; icon='✅';
+      txt = `<strong>Mietpreisbremse-Hebel realistisch:</strong> Mod-Investition (${eur(san.modBasis)}) ≥ ⅓ Neubau-Vergleichswert (${eur(schwelle_neu)}) und ${gewerke} Gewerke saniert. Erstvermietung nach umfassender Modernisierung erfüllt voraussichtlich § 556f Satz 2 BGB — Mietpreisbremse greift nicht.`;
+    } else if(erreicht_neu && gewerke<3){
+      cls='alert-warn'; icon='⚠️';
+      txt = `<strong>Schwelle ⅓-Neubau erreicht</strong> (${eur(san.modBasis)} ≥ ${eur(schwelle_neu)}), aber nur ${gewerke} Gewerke. BGH verlangt zusätzlich neubauähnlichen Zustand (mehrere Gewerke: Heizung, Sanitär, Elektrik, Fenster, Dämmung).`;
+    } else if(erreicht_geb && gewerke>=3){
+      cls='alert-warn'; icon='⚠️';
+      txt = `<strong>⅓-Gebäudewert (Bestand) erreicht</strong>, aber Neubau-Vergleich nicht ganz (${eur(san.modBasis)} < ${eur(schwelle_neu)}). Argumentation möglich, aber rechtlich riskanter — die strengere Neubau-Schwelle gilt nach BGH.`;
+    } else {
+      cls='alert-bad'; icon='❌';
+      const fehlt = schwelle_neu - san.modBasis;
+      txt = `<strong>Mietpreisbremse-Hebel unwahrscheinlich:</strong> Mod-Investition (${eur(san.modBasis)}) liegt unter der ⅓-Neubau-Schwelle (${eur(schwelle_neu)}). Fehlbetrag: <strong>${eur(fehlt)}</strong>.`;
+    }
+    resHtml = `<div class="alert ${cls}">${icon} ${txt}</div>`;
+  }
+  document.getElementById('mp_result').innerHTML = resHtml;
+
+  // §559 Modernisierungsumlage
+  setText('mod_basis', eur(san.modBasis));
+  const umlage_pa = san.modBasis * 0.08;
+  setText('mod_umlage_pa', eur(umlage_pa));
+  const mqm = wfl>0 ? umlage_pa/12/wfl : 0;
+  setText('mod_qm', eur(mqm,2));
+  const kw = document.getElementById('kappung_warn');
+  if(mqm > 3){
+    kw.style.display='block';
+    kw.innerHTML = `⚠️ Mieterhöhung ${eur(mqm,2)}/m²/Monat überschreitet die <strong>Kappungsgrenze von 3 €/m² in 6 Jahren</strong>. Umlage muss begrenzt werden.`;
+  } else {
+    kw.style.display='none';
+  }
+
+  // §6 EStG 15%-Grenze
+  const ahk_schwelle = gb.gw * 0.15; // 15% des Gebäudewerts (Netto-Approximation)
+  setText('ahk_schwelle', eur(ahk_schwelle));
+  const san_netto = san.total / 1.19;
+  setText('ahk_san_netto', eur(san_netto));
+  const ahkKpi = document.getElementById('ahk_status_kpi');
+  const ahkSt = document.getElementById('ahk_status');
+  const ahkA = document.getElementById('ahk_alert');
+  if(san.total<=0){
+    ahkSt.textContent='–';
+    ahkKpi.classList.remove('good','warn','bad');
+    ahkA.innerHTML='';
+  } else if(san_netto > ahk_schwelle){
+    ahkKpi.classList.add('warn'); ahkKpi.classList.remove('good','bad');
+    ahkSt.textContent='⚠️ Über 15 %';
+    ahkA.innerHTML = `<div class="alert alert-warn"><strong>Anschaffungsnahe Herstellungskosten:</strong> Sanierung (${eur(san_netto)} netto) übersteigt 15 %-Schwelle (${eur(ahk_schwelle)}) — Kosten in den ersten 3 Jahren werden steuerlich nur über AfA abgesetzt (i.d.R. 2 % p.a.), nicht sofort als Werbungskosten.</div>`;
+  } else {
+    ahkKpi.classList.add('good'); ahkKpi.classList.remove('warn','bad');
+    ahkSt.textContent='✅ Unter 15 %';
+    ahkA.innerHTML = `<div class="alert alert-good">Sanierung unter der 15 %-Grenze: voll als Werbungskosten im Jahr der Zahlung abzugsfähig (sofern keine wesentliche Verbesserung gleichzeitig).</div>`;
+  }
+
+  // Zeitachse
+  const zb = document.getElementById('zeitachse');
+  const d_nl = str('d_nl'), d_se = str('d_san_ende'), d_ev = str('d_erstvm');
+  let zb_html = '';
+  if(d_nl){
+    const dt_nl = new Date(d_nl);
+    zb_html += `<div>📅 <strong>Nutzen &amp; Lasten:</strong> ${dt_nl.toLocaleDateString('de-DE')}</div>`;
+    if(d_se){
+      const dt_se = new Date(d_se);
+      const dauer = Math.round((dt_se - dt_nl)/86400000);
+      zb_html += `<div>🔨 <strong>Sanierung fertig:</strong> ${dt_se.toLocaleDateString('de-DE')} (${dauer>0?dauer:'?'} Tage nach Übergabe)</div>`;
+    }
+    if(d_ev){
+      const dt_ev = new Date(d_ev);
+      const dt_basis = d_se ? new Date(d_se) : dt_nl;
+      const wait = Math.round((dt_ev - dt_basis)/86400000);
+      zb_html += `<div>🔑 <strong>Erstvermietung:</strong> ${dt_ev.toLocaleDateString('de-DE')} (${wait>0?wait:'?'} Tage nach Sanierungsende)</div>`;
+    }
+  } else {
+    zb_html = 'Trage die Daten ein, um die Zeitachse zu sehen.';
+  }
+  zb.innerHTML = zb_html;
+}
+
+function applyKpiColor(el, value, thresholds, higherIsBetter){
+  if(!el || !isFinite(value)) return;
+  el.classList.remove('good','warn','bad','info');
+  const [r,y,g] = higherIsBetter ? [thresholds[2],thresholds[1],thresholds[0]] : [thresholds[0],thresholds[1],thresholds[2]];
+  if(higherIsBetter){
+    if(value >= thresholds[0]) el.classList.add('good');
+    else if(value >= thresholds[1]) el.classList.add('warn');
+    else el.classList.add('bad');
+  } else {
+    if(value <= thresholds[0]) el.classList.add('good');
+    else if(value <= thresholds[1]) el.classList.add('warn');
+    else el.classList.add('bad');
+  }
+}
+
+function calcKennzahlen(m, gb, bank, sat, inv){
+  // Cashflow operativ (monatlich)
+  const cf_zinsen = bank.dSum * bank.zGew / 12;
+  const cf_tilg = bank.dSum * bank.tGew / 12;
+  const cf_ausfall = m.mausf;
+  const cf_verw = m.verw;
+  const cf_bk = m.hg_nu + m.ih_monat;
+  const cf_op = m.nkm - cf_bk - cf_ausfall - cf_verw - cf_zinsen - cf_tilg;
+  setText('cf_nkm', eur(m.nkm,2));
+  setText('cf_bk', '−'+eur(cf_bk,2));
+  setText('cf_ausfall', '−'+eur(cf_ausfall,2));
+  setText('cf_verw', '−'+eur(cf_verw,2));
+  setText('cf_zinsen', '−'+eur(cf_zinsen,2));
+  setText('cf_tilg', '−'+eur(cf_tilg,2));
+  setText('cf_op', eur(cf_op,2));
+
+  // Steuerlich (Monatsbasis)
+  const st_bk = m.hg_nu + cf_ausfall;
+  const st_zinsen = cf_zinsen;
+  const st_afa = gb.afa_pa/12;
+  const st_zv = m.nkm - st_bk - cf_verw - st_zinsen - st_afa;
+  setText('st_nkm', eur(m.nkm,2));
+  setText('st_bk', '−'+eur(st_bk,2));
+  setText('st_verw', '−'+eur(cf_verw,2));
+  setText('st_zinsen', '−'+eur(st_zinsen,2));
+  setText('st_afa', '−'+eur(st_afa,2));
+  setText('st_zv', eur(st_zv,2));
+  setText('st_satz', pct(sat*100,2));
+  const st_last = st_zv * sat;
+  setText('st_last', eur(st_last,2));
+  const cf_nach = cf_op - st_last;
+  setText('cf_nach_st', eur(cf_nach,2));
+
+  // Kennzahlen
+  const kp = num('kp');
+  const nk = parseFloat(document.getElementById('nke_sum').textContent.replace(/[^\d.,-]/g,'').replace(/\./g,'').replace(',','.'))||0;
+  // Better: recalc
+  const nkReal = calcNebenkostenSum();
+  const total = kp + nkReal + inv + (window._sanTotal||0);
+
+  const jahresKaltmiete = m.nkm * 12;
+  const brmr = kp>0 ? jahresKaltmiete/kp*100 : 0;
+  const nmr_basis = (jahresKaltmiete - cf_bk*12);
+  const nmr = total>0 ? nmr_basis/total*100 : 0;
+  const faktor = jahresKaltmiete>0 ? kp/jahresKaltmiete : 0;
+
+  setText('k_brmr', pct(brmr,2));
+  setText('k_nmr', pct(nmr,2));
+  setText('k_faktor', faktor.toFixed(1)+'×');
+  setText('k_cfop', eur(cf_op,2));
+  setText('k_cfst', eur(cf_nach,2));
+
+  // EK-Rendite
+  const ek = num('ek');
+  const tilgPa = bank.dSum * bank.tGew;
+  const wertSteigPa = (kp + (window._sanTotal||0)) * num('ws_pa')/100;
+  const vermZ_mitWS = cf_nach*12 + tilgPa + wertSteigPa;
+  const vermZ_ohneWS = cf_nach*12 + tilgPa;
+  setText('k_vz', eur(tilgPa + wertSteigPa));
+  setText('k_ekr', ek>0 ? pct(vermZ_mitWS/ek*100,2) : '–');
+  setText('k_ekr_ohne', ek>0 ? pct(vermZ_ohneWS/ek*100,2) : '–');
+
+  // Color thresholds
+  applyKpiColor(document.getElementById('kpi_brmr'), brmr, [5,4,3], true);
+  applyKpiColor(document.getElementById('kpi_nmr'), nmr, [4,3,2], true);
+  applyKpiColor(document.getElementById('kpi_cf'), cf_op, [0,-2,-5], true);
+  applyKpiColor(document.getElementById('kpi_cfst'), cf_nach, [0,-2,-5], true);
+  applyKpiColor(document.getElementById('kpi_ekr'), ek>0 ? vermZ_mitWS/ek*100 : 0, [10,5,2], true);
+}
+
+function calcNebenkostenSum(){
+  const kp = num('kp');
+  return kp*(num('nkp_grest')+num('nkp_notar')+num('nkp_gb')+num('nkp_makler')+num('nkp_sonst'))/100;
+}
+
+function calcOverview(kp, nk, inv, san){
+  setText('ov_kp', eur(kp));
+  setText('ov_nk', eur(nk));
+  setText('ov_inv', eur(inv));
+  setText('ov_san', eur(san));
+  const total = kp+nk+inv+san;
+  setText('ov_total', eur(total));
+  const wfl = num('wfl');
+  setText('ov_qm', wfl>0 ? eur(total/wfl) : '–');
+  setText('kp_pro_qm', wfl>0 ? eur(kp/wfl) + '/m²' : '–');
+}
+
+function calcVerlauf(m, gb, bank, sat){
+  const tbody = document.getElementById('verlauf_body');
+  tbody.innerHTML='';
+  const kaufJahr = (new Date(str('kaufdatum')).getFullYear() || new Date().getFullYear());
+
+  const ms = num('ms_pa')/100;
+  const ks = num('ks_pa')/100;
+  const ws = num('ws_pa')/100;
+  const kp = num('kp');
+  const sanTotal = window._sanTotal||0;
+  const startWert = kp + sanTotal;
+
+  const points = [];
+  let nkm = m.nkm*12;
+  let bk = (m.hg_nu + m.ih_monat)*12; // nur nicht umlageabhängige
+  let ausfall = m.mausf*12;
+  let verw = m.verw*12;
+  let R = bank.d1; // Restschuld Hauptdarlehen
+  const d2 = bank.d2;
+  let R2 = d2;
+  const rate1 = annuitaet(bank.d1, bank.z1, bank.t1);
+  const rate2 = annuitaet(d2, bank.z2, bank.t2);
+
+  for(let y=1; y<=30; y++){
+    const jahr = kaufJahr + y;
+    // Zinsen+Tilgung Jahr y
+    let zJ = 0, tJ=0;
+    {
+      let Rt = R;
+      for(let mn=0;mn<12;mn++){
+        const z = Rt*bank.z1/12;
+        const t = rate1 - z;
+        Rt -= t;
+        if(Rt<0) Rt=0;
+        zJ += z; tJ += t;
+      }
+      R = Rt;
+    }
+    if(d2>0){
+      let Rt = R2;
+      for(let mn=0;mn<12;mn++){
+        const z = Rt*bank.z2/12;
+        const t = rate2 - z;
+        Rt -= t;
+        if(Rt<0) Rt=0;
+        zJ += z; tJ += t;
+      }
+      R2 = Rt;
+    }
+
+    const cf_op = nkm - bk - ausfall - verw - zJ - tJ;
+    const zv = nkm - bk - verw - zJ - gb.afa_pa;
+    const st = zv * sat;
+    const cfNach = cf_op - st;
+    const wertY = startWert * Math.pow(1+ws, y);
+    const ekY = wertY - R - R2;
+
+    tbody.insertAdjacentHTML('beforeend',
+      `<tr><td>${jahr} (J${y})</td>
+       <td class="num">${eur(nkm)}</td>
+       <td class="num">${eur(bk+ausfall+verw)}</td>
+       <td class="num">${eur(zJ)}</td>
+       <td class="num">${eur(tJ)}</td>
+       <td class="num" style="color:${cf_op<0?'#dc2626':'#16a34a'}">${eur(cf_op)}</td>
+       <td class="num">${eur(st)}</td>
+       <td class="num" style="font-weight:600;color:${cfNach<0?'#dc2626':'#16a34a'}">${eur(cfNach)}</td>
+       <td class="num">${eur(R+R2)}</td>
+       <td class="num">${eur(wertY)}</td>
+       <td class="num" style="font-weight:600">${eur(ekY)}</td>
+       </tr>`);
+    points.push({y, jahr, cfOp:cf_op, cfNach, restschuld:R+R2, wert:wertY, ek:ekY});
+
+    nkm *= (1+ms);
+    bk *= (1+ks);
+    ausfall *= (1+ms);
+    verw *= (1+ks);
+  }
+  drawChart(points);
+}
+
+function drawChart(points){
+  const svg = document.getElementById('chart');
+  if(!svg || !points.length) return;
+  const W=1000, H=280, pad={l:60,r:40,t:18,b:32};
+  const innerW = W-pad.l-pad.r, innerH = H-pad.t-pad.b;
+  const xs = points.map(p=>p.y);
+  const minY = Math.min(...points.map(p=>p.cfNach), 0);
+  const maxY = Math.max(...points.map(p=>p.ek), ...points.map(p=>p.wert));
+  const yScale = v=> pad.t + innerH - (v - minY)/(maxY - minY)*innerH;
+  const xScale = y=> pad.l + (y-1)/(xs.length-1)*innerW;
+
+  function path(getter, color){
+    return points.map((p,i)=> (i===0?'M':'L') + xScale(p.y) + ',' + yScale(getter(p))).join(' ');
+  }
+
+  // y-axis ticks
+  let ticks='';
+  const tickCount=5;
+  for(let i=0;i<=tickCount;i++){
+    const v = minY + (maxY-minY)*i/tickCount;
+    const y = yScale(v);
+    ticks += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${y}" y2="${y}" stroke="#e2e8f0" stroke-dasharray="2 4"/>
+              <text x="${pad.l-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#64748b">${(v/1000).toFixed(0)}k €</text>`;
+  }
+  let xticks='';
+  [1,5,10,15,20,25,30].forEach(y=>{
+    if(y<=points.length){
+      const x = xScale(y);
+      xticks += `<line x1="${x}" x2="${x}" y1="${pad.t}" y2="${H-pad.b}" stroke="#f1f5f9"/>
+                 <text x="${x}" y="${H-pad.b+14}" text-anchor="middle" font-size="10" fill="#64748b">J${y}</text>`;
+    }
+  });
+  // zero line if minY<0
+  let zero='';
+  if(minY<0){
+    const y0 = yScale(0);
+    zero = `<line x1="${pad.l}" x2="${W-pad.r}" y1="${y0}" y2="${y0}" stroke="#94a3b8" stroke-width="1"/>`;
+  }
+
+  const legendY = pad.t-4;
+  svg.innerHTML = `
+    ${ticks}${xticks}${zero}
+    <path d="${path(p=>p.wert, '#2c5282')}" fill="none" stroke="#2c5282" stroke-width="2"/>
+    <path d="${path(p=>p.ek, '#16a34a')}" fill="none" stroke="#16a34a" stroke-width="2"/>
+    <path d="${path(p=>p.restschuld, '#dc2626')}" fill="none" stroke="#dc2626" stroke-width="2"/>
+    <path d="${path(p=>p.cfNach*12, '#d97706')}" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="4 2"/>
+    <g font-size="11" font-family="sans-serif">
+      <circle cx="${pad.l+10}" cy="${legendY}" r="4" fill="#2c5282"/><text x="${pad.l+20}" y="${legendY+4}" fill="#1e293b">Immobilien-Wert</text>
+      <circle cx="${pad.l+150}" cy="${legendY}" r="4" fill="#16a34a"/><text x="${pad.l+160}" y="${legendY+4}" fill="#1e293b">Eigenkapital (Wert−Schuld)</text>
+      <circle cx="${pad.l+340}" cy="${legendY}" r="4" fill="#dc2626"/><text x="${pad.l+350}" y="${legendY+4}" fill="#1e293b">Restschuld</text>
+      <circle cx="${pad.l+450}" cy="${legendY}" r="4" fill="#d97706"/><text x="${pad.l+460}" y="${legendY+4}" fill="#1e293b">CF n. Steuern (Jahr)</text>
+    </g>`;
+}
+
+// ============ Master ============
+function calcAll(){
+  const kp = num('kp');
+  const nk = calcNebenkosten();
+  const inv = calcInvest();
+  const san = calcSanierung();
+  window._sanTotal = san.total;
+  calcOverview(kp, nk, inv, san.total);
+  const gb = calcGrundBoden(kp, nk);
+  const m = calcMiete(num('wfl'));
+  const bank = calcBank(kp, nk, inv, san.total);
+  const sat = calcSteuersatz();
+  calcMietpreisbremse(san, gb);
+  calcKennzahlen(m, gb, bank, sat, inv);
+  calcVerlauf(m, gb, bank, sat);
+}
+
+// ============ Init ============
+window.addEventListener('DOMContentLoaded', ()=>{
+  // Defaults
+  document.getElementById('nkp_grest').value = GREST_BL['BE'];
+  // Load saved
+  load();
+  // Re-trigger bundesland
+  if(!document.getElementById('nkp_grest').value) onBundeslandChange();
+  calcAll();
+
+  // mark manuelle Override für AWM/NHK wenn User selbst tippt
+  ['awm','nhk'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener('input', ()=>{ el.dataset.auto='0'; });
+  });
+});
+</script>
+
+</body>
+</html>

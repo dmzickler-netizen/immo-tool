@@ -1459,11 +1459,12 @@ function extractFromPdf(text){
   // Normalize whitespace but preserve some context
   const t = text.replace(/ /g, ' ');
 
-  // MEA: e.g. "Miteigentumsanteil von 100/1.000" or "MEA 100 / 1000"
+  // MEA: e.g. "Miteigentumsanteil von 100/1.000" or "MEA 100 / 1000" or "87/1000stel"
   let m;
   const meaPatterns = [
-    /(?:Miteigentums-?\s*Anteil|MEA)[^0-9]{0,40}(\d{1,5}(?:[.,]\d+)?)\s*\/\s*(\d{1,6}(?:[.,]\d{3})*)/i,
-    /(\d{1,4}(?:[.,]\d+)?)\s*\/\s*(\d{1,6}(?:[.,]\d{3})*)\s*(?:tel\b|stel\b)?[^a-zäöü]{0,15}(?:Miteigentumsanteil|Anteil)/i,
+    /(?:Miteigentums-?\s*Anteil|MEA)[^0-9]{0,40}(?:von\s+)?(\d{1,5}(?:[.,]\d+)?)\s*\/\s*(\d{1,6}(?:[.,]\d{3})*)/i,
+    /(\d{1,4}(?:[.,]\d+)?)\s*\/\s*(\d{1,6}(?:[.,]\d{3})*)\s*(?:tel|stel|igstel|igtel)\b[^a-zäöü]{0,15}(?:Miteigentumsanteil|Anteil)/i,
+    /(\d{1,4})\s*\/\s*(\d{1,6}(?:[.,]\d{3})*)\s*(?:tel|stel|igstel|igtel)[\s\.,]/i,
   ];
   for(const p of meaPatterns){
     m = t.match(p);
@@ -1477,10 +1478,13 @@ function extractFromPdf(text){
     }
   }
 
-  // Grundstücksfläche: "Größe von 1.234 m²" or "Flurstück ... groß 1.234 m²"
+  // Grundstücksfläche: "Größe von 1.234 m²" or Grundbuch-Tabelle "Flurstück X ... 1.234 qm"
   const gflPatterns = [
     /(?:Gr(?:und|d)st(?:ü|ue)cksfl(?:ä|ae)che|Gesamtfl(?:ä|ae)che|Grundst(?:ü|ue)ck.{0,40}?gr(?:o|oe)ß|Fl(?:ä|ae)che[^a-z]{0,5}groß|Größe[^0-9]{0,20})[^0-9]{0,30}(\d{1,5}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:m²|qm|m2)/i,
     /(\d{1,5}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:m²|qm|m2)\s*(?:groß|Grundst(?:ü|ue)cksfl(?:ä|ae)che|Grundst(?:ü|ue)ck)/i,
+    // Grundbuch-Tabelle: "Flurstück 123 ... 1.234 qm" oder "Gebäude- und Freifläche ... 1.234 qm"
+    /Flurst(?:ü|ue)ck[^a-zäöü]{0,80}?(\d{1,5}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:m²|qm|m2)/i,
+    /(?:Gebäude-?\s*und\s*Freifl(?:ä|ae)che|Hof-?\s*und\s*Geb(?:ä|ae)udefl(?:ä|ae)che)[^a-zäöü]{0,40}(\d{1,5}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:m²|qm|m2)/i,
   ];
   for(const p of gflPatterns){
     m = t.match(p);
@@ -1509,10 +1513,14 @@ function extractFromPdf(text){
     }
   }
 
-  // Bodenrichtwert
+  // Bodenrichtwert (BORIS-Varianten)
   const brwPatterns = [
     /Bodenrichtwert[^0-9]{0,30}(\d{1,5}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:€|EUR)?\s*\/?\s*(?:m²|qm|m2)?/i,
-    /BRW[^0-9]{0,20}(\d{1,5}(?:[.,]\d{3})*)\s*(?:€|EUR)/i,
+    /BRW[^0-9]{0,20}(\d{1,5}(?:[.,]\d{3})*)\s*(?:€|EUR)?/i,
+    // BORIS-Auszug: "Richtwert 4500" oder "Wert: 4500 €/m²"
+    /(?:Richtwert|Wert)[\s:]*(\d{1,5}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:€|EUR)\s*\/\s*(?:m²|qm|m2)/i,
+    // BORIS-Tabelle: "BRW \d+" oder kurze Notation
+    /\bBRW\b[^\d]{0,8}(\d{1,5}(?:[.,]\d{3})*)/i,
   ];
   for(const p of brwPatterns){
     m = t.match(p);

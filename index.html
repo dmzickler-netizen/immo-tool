@@ -101,7 +101,23 @@
   .source{font-size:11px;color:var(--muted);font-style:italic;margin-top:6px}
   .chart-wrap{margin-top:10px;overflow-x:auto}
   .chart-wrap svg{display:block;min-width:600px}
+  .dropzone{border:2px dashed var(--border);border-radius:10px;padding:18px;text-align:center;background:#fafbfc;color:var(--ink2);cursor:pointer;transition:all 0.15s;font-size:13.5px}
+  .dropzone:hover,.dropzone.drag{border-color:var(--primary2);background:#eff6ff;color:var(--primary)}
+  .dropzone .ic{font-size:24px;margin-bottom:4px}
+  .pdf-status{font-size:12px;color:var(--ink2);margin-top:8px}
+  .pdf-status .ok{color:var(--good);font-weight:600}
+  .pdf-status .err{color:var(--bad)}
+  .findings{margin-top:10px;display:grid;gap:6px}
+  .finding{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#fff;border:1px solid var(--border);border-radius:6px;font-size:13px}
+  .finding .lab{font-weight:500;color:var(--ink2);flex:0 0 200px}
+  .finding .val{font-weight:600;color:var(--ink);flex:1}
+  .finding .ctx{font-size:11px;color:var(--muted);font-style:italic;flex:0 0 auto;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .finding button{background:var(--primary);color:#fff;border:none;padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;font-weight:500}
+  .finding button:hover{background:var(--primary2)}
+  .finding button.done{background:var(--good)}
+  .raw-text{margin-top:10px;max-height:240px;overflow:auto;background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink2);white-space:pre-wrap;line-height:1.4}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
@@ -233,6 +249,26 @@
 
   <!-- ===================== TAB: GRUND & BODEN ===================== -->
   <div class="tab" id="tab-grund">
+
+    <div class="card" style="margin-bottom:14px">
+      <h2>📄 PDF-Import (Teilungserklärung, Grundbuch, BORIS, Exposé)</h2>
+      <div class="legend">
+        Erkennt automatisch: Miteigentumsanteil, Grundstücksfläche, Wohnfläche, Bodenrichtwert, Kaufpreis, Baujahr, Adresse.
+        <strong>Nur Text-PDFs</strong> (keine Scans/Bilder) — Werte werden vorgeschlagen, nicht überschrieben.
+      </div>
+      <div class="dropzone" id="pdf-drop">
+        <div class="ic">📥</div>
+        <div><strong>PDF hier ablegen</strong> oder <a href="#" onclick="document.getElementById('pdf-file').click();return false">Datei wählen</a></div>
+        <div class="hint">mehrere PDFs nacheinander möglich</div>
+      </div>
+      <input type="file" id="pdf-file" accept="application/pdf" style="display:none" multiple>
+      <div class="pdf-status" id="pdf-status"></div>
+      <div class="findings" id="pdf-findings"></div>
+      <details style="margin-top:10px"><summary>Roh-Text aus PDF anzeigen</summary>
+        <div class="raw-text" id="pdf-raw">–</div>
+      </details>
+    </div>
+
     <div class="grid grid-2">
 
       <div class="card">
@@ -1400,6 +1436,261 @@ function calcAll(){
   calcVerlauf(m, gb, bank, sat);
 }
 
+// ============ PDF Import ============
+const PDF_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+function parseDeNum(s){
+  if(!s) return NaN;
+  s = String(s).trim();
+  // German: "1.234,56" → 1234.56  ;  "1234,56" → 1234.56  ;  "1.234" → 1234
+  if(/,\d+$/.test(s) && /\./.test(s)) return parseFloat(s.replace(/\./g,'').replace(',','.'));
+  if(/^\d{1,3}(\.\d{3})+$/.test(s)) return parseFloat(s.replace(/\./g,''));
+  return parseFloat(s.replace(',','.'));
+}
+
+function ctx(text, idx, len){
+  const start = Math.max(0, idx-30);
+  const end = Math.min(text.length, idx+len+30);
+  return '…' + text.substring(start, end).replace(/\s+/g,' ').trim() + '…';
+}
+
+function extractFromPdf(text){
+  const findings = [];
+  // Normalize whitespace but preserve some context
+  const t = text.replace(/ /g, ' ');
+
+  // MEA: e.g. "Miteigentumsanteil von 100/1.000" or "MEA 100 / 1000"
+  let m;
+  const meaPatterns = [
+    /(?:Miteigentums-?\s*Anteil|MEA)[^0-9]{0,40}(\d{1,5}(?:[.,]\d+)?)\s*\/\s*(\d{1,6}(?:[.,]\d{3})*)/i,
+    /(\d{1,4}(?:[.,]\d+)?)\s*\/\s*(\d{1,6}(?:[.,]\d{3})*)\s*(?:tel\b|stel\b)?[^a-zäöü]{0,15}(?:Miteigentumsanteil|Anteil)/i,
+  ];
+  for(const p of meaPatterns){
+    m = t.match(p);
+    if(m){
+      const z = parseDeNum(m[1]);
+      const n = parseDeNum(m[2]);
+      if(z>0 && n>0 && z<n){
+        findings.push({key:'mea', label:'Miteigentumsanteil', value:`${z} / ${n}`, raw:{z,n}, ctxStr:ctx(t, m.index, m[0].length)});
+        break;
+      }
+    }
+  }
+
+  // Grundstücksfläche: "Größe von 1.234 m²" or "Flurstück ... groß 1.234 m²"
+  const gflPatterns = [
+    /(?:Gr(?:und|d)st(?:ü|ue)cksfl(?:ä|ae)che|Gesamtfl(?:ä|ae)che|Grundst(?:ü|ue)ck.{0,40}?gr(?:o|oe)ß|Fl(?:ä|ae)che[^a-z]{0,5}groß|Größe[^0-9]{0,20})[^0-9]{0,30}(\d{1,5}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:m²|qm|m2)/i,
+    /(\d{1,5}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:m²|qm|m2)\s*(?:groß|Grundst(?:ü|ue)cksfl(?:ä|ae)che|Grundst(?:ü|ue)ck)/i,
+  ];
+  for(const p of gflPatterns){
+    m = t.match(p);
+    if(m){
+      const v = parseDeNum(m[1]);
+      if(v>=10 && v<100000){
+        findings.push({key:'gflaeche', label:'Grundstücksfläche', value:`${v.toLocaleString('de-DE')} m²`, raw:{v}, ctxStr:ctx(t, m.index, m[0].length)});
+        break;
+      }
+    }
+  }
+
+  // Wohnfläche
+  const wflPatterns = [
+    /Wohn(?:nutz|-)?fl(?:ä|ae)che[^0-9]{0,30}(\d{1,4}(?:[.,]\d+)?)\s*(?:m²|qm|m2)/i,
+    /(\d{1,4}(?:[.,]\d+)?)\s*(?:m²|qm|m2)\s*Wohnfl(?:ä|ae)che/i,
+  ];
+  for(const p of wflPatterns){
+    m = t.match(p);
+    if(m){
+      const v = parseDeNum(m[1]);
+      if(v>=10 && v<1000){
+        findings.push({key:'wfl', label:'Wohnfläche', value:`${v.toLocaleString('de-DE')} m²`, raw:{v}, ctxStr:ctx(t, m.index, m[0].length)});
+        break;
+      }
+    }
+  }
+
+  // Bodenrichtwert
+  const brwPatterns = [
+    /Bodenrichtwert[^0-9]{0,30}(\d{1,5}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:€|EUR)?\s*\/?\s*(?:m²|qm|m2)?/i,
+    /BRW[^0-9]{0,20}(\d{1,5}(?:[.,]\d{3})*)\s*(?:€|EUR)/i,
+  ];
+  for(const p of brwPatterns){
+    m = t.match(p);
+    if(m){
+      const v = parseDeNum(m[1]);
+      if(v>=20 && v<50000){
+        findings.push({key:'brw', label:'Bodenrichtwert', value:`${v.toLocaleString('de-DE')} €/m²`, raw:{v}, ctxStr:ctx(t, m.index, m[0].length)});
+        break;
+      }
+    }
+  }
+
+  // Kaufpreis
+  const kpPatterns = [
+    /Kaufpreis[^0-9€]{0,40}(?:€|EUR)?[^0-9€]{0,10}(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d{4,})\s*(?:€|EUR)?/i,
+    /(?:€|EUR)\s*(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?)\s*(?:Kaufpreis)/i,
+  ];
+  for(const p of kpPatterns){
+    m = t.match(p);
+    if(m){
+      const v = parseDeNum(m[1]);
+      if(v>=10000 && v<50000000){
+        findings.push({key:'kp', label:'Kaufpreis', value:`${v.toLocaleString('de-DE')} €`, raw:{v}, ctxStr:ctx(t, m.index, m[0].length)});
+        break;
+      }
+    }
+  }
+
+  // Baujahr
+  const bjPatterns = [
+    /(?:Baujahr|erbaut|errichtet|fertig\s*gestellt|Bezugsfertig|Bezugsfertigkeit)[^\d]{0,20}(1[89]\d{2}|20\d{2})/i,
+    /(?:Jahr\s+der\s+(?:Errichtung|Fertigstellung))[^\d]{0,15}(1[89]\d{2}|20\d{2})/i,
+  ];
+  for(const p of bjPatterns){
+    m = t.match(p);
+    if(m){
+      const v = parseInt(m[1]);
+      const cur = new Date().getFullYear();
+      if(v>=1800 && v<=cur){
+        findings.push({key:'baujahr', label:'Baujahr', value:String(v), raw:{v}, ctxStr:ctx(t, m.index, m[0].length)});
+        break;
+      }
+    }
+  }
+
+  // Adresse: Straße Hnr, PLZ Ort
+  const addrPatterns = [
+    /([A-ZÄÖÜ][A-Za-zäöüßÄÖÜ\-\.]{2,30}(?:straße|str\.|weg|allee|platz|gasse|ring|damm|ufer|hof|chaussee))\s+(\d{1,4}[a-zA-Z]?)\s*,?\s*(\d{5})\s+([A-ZÄÖÜ][A-Za-zäöüßÄÖÜ\-]+(?:[ \-][A-ZÄÖÜ][A-Za-zäöüßÄÖÜ\-]+)?)/,
+  ];
+  for(const p of addrPatterns){
+    m = t.match(p);
+    if(m){
+      const adr = `${m[1]} ${m[2]}, ${m[3]} ${m[4].trim()}`;
+      findings.push({key:'adresse', label:'Adresse', value:adr, raw:{adr}, ctxStr:ctx(t, m.index, m[0].length)});
+      break;
+    }
+  }
+
+  return findings;
+}
+
+async function readPdfText(file){
+  if(typeof pdfjsLib === 'undefined') throw new Error('PDF.js nicht geladen');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER;
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+  let all = '';
+  for(let i=1; i<=pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const tc = await page.getTextContent();
+    const pageText = tc.items.map(it=>it.str).join(' ');
+    all += pageText + '\n\n';
+  }
+  return all;
+}
+
+function renderFindings(findings){
+  const c = document.getElementById('pdf-findings');
+  c.innerHTML = '';
+  if(!findings.length){
+    c.innerHTML = '<div class="alert alert-warn" style="margin:8px 0">⚠️ Keine bekannten Felder erkannt. Womöglich Scan-PDF (Bild) oder ungewöhnliches Format. Roh-Text unten zur Kontrolle.</div>';
+    return;
+  }
+  findings.forEach((f,i)=>{
+    const div = document.createElement('div');
+    div.className = 'finding';
+    div.innerHTML = `<span class="lab">${f.label}</span>
+      <span class="val">${f.value}</span>
+      <span class="ctx" title="${f.ctxStr.replace(/"/g,'&quot;')}">${f.ctxStr}</span>
+      <button data-idx="${i}">Übernehmen</button>`;
+    div.querySelector('button').addEventListener('click', (ev)=>{
+      applyFinding(f);
+      ev.target.textContent = '✓ übernommen';
+      ev.target.classList.add('done');
+      ev.target.disabled = true;
+    });
+    c.appendChild(div);
+  });
+
+  // Aktion: alle übernehmen
+  const all = document.createElement('button');
+  all.className = 'btn';
+  all.style.marginTop = '6px';
+  all.textContent = 'Alle übernehmen';
+  all.addEventListener('click', ()=>{
+    findings.forEach(applyFinding);
+    c.querySelectorAll('button[data-idx]').forEach(b=>{
+      b.textContent='✓ übernommen';
+      b.classList.add('done');
+      b.disabled = true;
+    });
+  });
+  c.appendChild(all);
+}
+
+function applyFinding(f){
+  switch(f.key){
+    case 'mea':
+      setVal('mea_z', f.raw.z); setVal('mea_n', f.raw.n); break;
+    case 'gflaeche':
+      setVal('gflaeche', f.raw.v); break;
+    case 'wfl':
+      setVal('wfl', f.raw.v); break;
+    case 'brw':
+      setVal('brw', f.raw.v); break;
+    case 'kp':
+      setVal('kp', f.raw.v); break;
+    case 'baujahr':
+      setVal('baujahr', f.raw.v);
+      document.getElementById('awm').dataset.auto = '1';
+      break;
+    case 'adresse':
+      setVal('adresse', f.raw.adr); break;
+  }
+  // Fire input events so calculations + save trigger
+  ['mea_z','mea_n','gflaeche','wfl','brw','kp','baujahr','adresse','awm'].forEach(id=>{
+    const e = document.getElementById(id);
+    if(e) e.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+}
+
+async function handlePdfFiles(files){
+  const status = document.getElementById('pdf-status');
+  const raw = document.getElementById('pdf-raw');
+  if(!files || !files.length) return;
+  status.innerHTML = `<span>⏳ Lese ${files.length} PDF${files.length>1?'s':''}…</span>`;
+  let combined = '';
+  let names = [];
+  try{
+    for(const f of files){
+      const text = await readPdfText(f);
+      combined += `\n\n=== ${f.name} ===\n` + text;
+      names.push(f.name);
+    }
+    raw.textContent = combined.trim() || '(leer)';
+    const findings = extractFromPdf(combined);
+    status.innerHTML = `<span class="ok">✓ ${names.length} PDF gelesen (${combined.length.toLocaleString('de-DE')} Zeichen) — ${findings.length} Treffer</span><br><span style="font-size:11px;color:var(--muted)">${names.join(' · ')}</span>`;
+    renderFindings(findings);
+  } catch(err){
+    status.innerHTML = `<span class="err">✗ Fehler: ${err.message}</span>`;
+    raw.textContent = '–';
+  }
+}
+
+function setupPdfDrop(){
+  const dz = document.getElementById('pdf-drop');
+  const inp = document.getElementById('pdf-file');
+  if(!dz || !inp) return;
+  dz.addEventListener('click', ()=> inp.click());
+  inp.addEventListener('change', (e)=> handlePdfFiles(e.target.files));
+  ['dragenter','dragover'].forEach(ev=> dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev=> dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', e=>{
+    const files = Array.from(e.dataTransfer.files || []).filter(f=>f.type==='application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    handlePdfFiles(files);
+  });
+}
+
 // ============ Init ============
 window.addEventListener('DOMContentLoaded', ()=>{
   // Defaults
@@ -1409,6 +1700,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   // Re-trigger bundesland
   if(!document.getElementById('nkp_grest').value) onBundeslandChange();
   calcAll();
+  setupPdfDrop();
 
   // mark manuelle Override für AWM/NHK wenn User selbst tippt
   ['awm','nhk'].forEach(id=>{

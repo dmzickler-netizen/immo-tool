@@ -27,11 +27,15 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45;-webkit-font-smoothing:antialiased}
-  .header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary2) 100%);color:#fff;padding:18px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
-  .header h1{margin:0 0 4px;font-size:22px;font-weight:600;letter-spacing:-0.2px}
-  .header .sub{font-size:13px;opacity:0.85}
-  .nav-bar{background:#fff;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px;padding:6px 16px;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
-  .nav-btn{background:transparent;border:none;padding:10px 14px;font-size:13.5px;color:var(--ink2);cursor:pointer;border-radius:6px;font-weight:500;transition:all 0.12s;white-space:nowrap}
+  .header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary2) 100%);color:#fff;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .header h1{margin:0;font-size:17px;font-weight:600;letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .header .sub{font-size:12px;opacity:0.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+  .header .info-btn{background:rgba(255,255,255,0.12);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;flex:0 0 28px;display:flex;align-items:center;justify-content:center}
+  .header .info-btn:hover{background:rgba(255,255,255,0.2)}
+  @media(max-width:600px){.header .sub{display:none}}
+  .nav-bar{background:#fff;border-bottom:1px solid var(--border);display:flex;flex-wrap:nowrap;gap:2px;padding:4px 8px;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+  .nav-bar::-webkit-scrollbar{display:none}
+  .nav-btn{background:transparent;border:none;padding:11px 14px;font-size:13.5px;color:var(--ink2);cursor:pointer;border-radius:6px;font-weight:500;transition:all 0.12s;white-space:nowrap;min-height:44px;scroll-snap-align:center;flex:0 0 auto}
   .nav-btn:hover{background:#f1f5f9;color:var(--ink)}
   .nav-btn.active{background:var(--primary);color:#fff}
   .container{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
@@ -60,14 +64,20 @@
   .kpi .lab{font-size:11px;color:var(--ink2);font-weight:500;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px}
   .kpi .val{font-size:19px;font-weight:600;color:var(--ink)}
   .kpi .sub{font-size:11px;color:var(--muted);margin-top:2px}
-  .kpi.good{background:var(--soft-good);border-color:#86efac}
-  .kpi.good .val{color:#166534}
-  .kpi.warn{background:var(--soft-warn);border-color:#fcd34d}
-  .kpi.warn .val{color:#92400e}
-  .kpi.bad{background:var(--soft-bad);border-color:#fca5a5}
-  .kpi.bad .val{color:#991b1b}
-  .kpi.info{background:var(--soft-info);border-color:#7dd3fc}
+  .kpi.good{border-left:3px solid var(--good)}
+  .kpi.good .val{color:#15803d}
+  .kpi.warn{border-left:3px solid var(--warn)}
+  .kpi.warn .val{color:#b45309}
+  .kpi.bad{border-left:3px solid var(--bad)}
+  .kpi.bad .val{color:#b91c1c}
+  .kpi.info{border-left:3px solid var(--info)}
   .kpi.info .val{color:#075985}
+  .kpi.hero{padding:16px 18px}
+  .kpi.hero .lab{font-size:11px}
+  .kpi.hero .val{font-size:30px;line-height:1.1;letter-spacing:-0.5px;margin:6px 0 4px}
+  .kpi.hero .sub{font-size:12px}
+  .hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  @media(max-width:700px){.hero-grid{grid-template-columns:1fr}}
   .alert{padding:10px 12px;border-radius:8px;font-size:13px;margin:10px 0;border-left:4px solid}
   .alert-info{background:var(--soft-info);border-color:var(--info);color:#075985}
   .alert-good{background:var(--soft-good);border-color:var(--good);color:#166534}
@@ -94,10 +104,16 @@
   .legend{font-size:12px;color:var(--ink2);background:#f8fafc;padding:8px 12px;border-radius:6px;border-left:3px solid var(--primary2);margin:8px 0}
   .group{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media(max-width:700px){.group{grid-template-columns:1fr}}
-  .disclaimer{background:#fef3c7;border:1px solid #fcd34d;color:#78350f;padding:8px 12px;border-radius:6px;font-size:12px;margin-bottom:14px}
-  .toolbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;margin-bottom:10px;align-items:center}
-  .toolbar .label{font-size:12px;color:var(--ink2);margin-right:6px}
-  .toolbar input[type=text]{font-size:12px;padding:4px 8px}
+  .disclaimer{background:#fef3c7;border:1px solid #fcd34d;color:#78350f;padding:8px 36px 8px 12px;border-radius:6px;font-size:12px;margin-bottom:14px;position:relative}
+  .disclaimer .dismiss{position:absolute;top:6px;right:8px;background:transparent;border:none;color:#78350f;cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:4px}
+  .disclaimer .dismiss:hover{background:rgba(120,53,15,0.1)}
+  .disclaimer.hidden{display:none}
+  .toolbar{margin-bottom:10px}
+  .toolbar summary{font-size:12px;color:var(--ink2);cursor:pointer;text-align:right;padding:4px 0;list-style:none;display:flex;justify-content:flex-end;align-items:center;gap:6px}
+  .toolbar summary::-webkit-details-marker{display:none}
+  .toolbar summary::after{content:"▾";font-size:10px;opacity:0.5}
+  .toolbar[open] summary::after{content:"▴"}
+  .toolbar .actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;padding:8px 0;align-items:center}
   .source{font-size:11px;color:var(--muted);font-style:italic;margin-top:6px}
   .chart-wrap{margin-top:10px;overflow-x:auto}
   .chart-wrap svg{display:block;min-width:600px}
@@ -130,8 +146,9 @@
 <body>
 
 <div class="header">
-  <h1>🏠 Immobilien-Investitions-Cockpit</h1>
-  <div class="sub">Profitabilitäts-Analyse · Grund &amp; Boden (BMF-light) · Sanierung &amp; Mietpreisbremse · Finanzierung &amp; Hochrechnung</div>
+  <h1>🏠 Immo-Cockpit</h1>
+  <div class="sub">Profitabilität · Grund &amp; Boden · Sanierung &amp; Mietpreisbremse · Finanzierung</div>
+  <button class="info-btn" id="show-disclaimer" title="Hinweise anzeigen" onclick="showDisclaimer()">ⓘ</button>
 </div>
 
 <nav class="nav-bar">
@@ -146,15 +163,21 @@
 
 <div class="container">
 
-  <div class="toolbar">
-    <span class="label">Werte werden automatisch im Browser gespeichert.</span>
-    <button class="btn btn-sec" onclick="exportData()">⬇️ Export JSON</button>
-    <button class="btn btn-sec" onclick="document.getElementById('importFile').click()">⬆️ Import JSON</button>
-    <input id="importFile" type="file" accept=".json" style="display:none" onchange="importData(event)">
-    <button class="btn btn-sec" onclick="resetData()">🔄 Reset</button>
-  </div>
+  <details class="toolbar">
+    <summary>⋯ Daten &amp; Aktionen</summary>
+    <div class="actions">
+      <span style="font-size:12px;color:var(--ink2);margin-right:6px">Werte werden automatisch im Browser gespeichert.</span>
+      <button class="btn btn-sec" onclick="exportData()">⬇️ Export JSON</button>
+      <button class="btn btn-sec" onclick="document.getElementById('importFile').click()">⬆️ Import JSON</button>
+      <input id="importFile" type="file" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="btn btn-sec" onclick="resetData()">🔄 Reset</button>
+    </div>
+  </details>
 
-  <div class="disclaimer">⚠️ <strong>Keine Steuer-, Rechts- oder Finanzberatung.</strong> Ergebnisse sind orientierende Kalkulationen. Für verbindliche Aussagen Steuerberater bzw. Bank konsultieren. Mietpreisbremse-Hebel: keine Garantie der Anerkennung — nur Gerichte können verbindlich entscheiden.</div>
+  <div class="disclaimer" id="disclaimer">
+    <button class="dismiss" onclick="dismissDisclaimer()" title="Schließen">×</button>
+    ⚠️ <strong>Keine Steuer-, Rechts- oder Finanzberatung.</strong> Ergebnisse sind orientierende Kalkulationen. Für verbindliche Aussagen Steuerberater bzw. Bank konsultieren. Mietpreisbremse-Hebel: keine Garantie der Anerkennung — nur Gerichte können verbindlich entscheiden.
+  </div>
 
   <!-- ===================== TAB: OBJEKT ===================== -->
   <div class="tab active" id="tab-objekt">
@@ -639,13 +662,20 @@
   <!-- ===================== TAB: KENNZAHLEN ===================== -->
   <div class="tab" id="tab-kpi">
 
+    <div class="hero-grid">
+      <div class="kpi hero" id="kpi_cfst"><div class="lab">Cashflow nach Steuern / Monat</div><div class="val" id="k_cfst">0 €</div><div class="sub">deine echte Belastung / dein Plus</div></div>
+      <div class="kpi hero" id="kpi_ekr"><div class="lab">Eigenkapitalrendite p.a.</div><div class="val" id="k_ekr">0 %</div><div class="sub">inkl. Tilgung + Wertsteig.</div></div>
+      <div class="kpi hero" id="kpi_brmr"><div class="lab">Bruttomietrendite</div><div class="val" id="k_brmr">0 %</div><div class="sub">Jahreskaltmiete / Kaufpreis</div></div>
+    </div>
+
     <div class="card">
-      <h2>Steuerliche Annahmen</h2>
-      <div class="grid grid-4">
-        <div class="field"><label>Persönlicher Grenzsteuersatz (%)</label><input type="number" id="grenzst" step="1" value="42" oninput="save();calcAll()"></div>
-        <div class="field"><label>Soli berücksichtigen?</label><select id="soli" onchange="save();calcAll()"><option value="0">Nein</option><option value="1">Ja (5,5 % auf ESt)</option></select></div>
-        <div class="field"><label>Kirchensteuer (%)</label><input type="number" id="kist" step="1" value="0" oninput="save();calcAll()"></div>
-        <div class="field"><label>Effektiver Steuersatz</label><input type="number" id="grenz_eff" readonly></div>
+      <h2>Weitere Kennzahlen</h2>
+      <div class="kpi-grid">
+        <div class="kpi" id="kpi_nmr"><div class="lab">Nettomietrendite</div><div class="val" id="k_nmr">0 %</div><div class="sub">(Jahres-NKM − Bewirt.) / Gesamtinvest.</div></div>
+        <div class="kpi"><div class="lab">Kaufpreis-Faktor</div><div class="val" id="k_faktor">0×</div><div class="sub">Kaufpreis / Jahreskaltmiete</div></div>
+        <div class="kpi" id="kpi_cf"><div class="lab">Cashflow operativ / Monat</div><div class="val" id="k_cfop">0 €</div></div>
+        <div class="kpi"><div class="lab">EK-Rendite ohne Wertsteig.</div><div class="val" id="k_ekr_ohne">0 %</div></div>
+        <div class="kpi"><div class="lab">Vermögenszuwachs p.a.</div><div class="val" id="k_vz">0 €</div><div class="sub">Tilgung + Wertsteigerung</div></div>
       </div>
     </div>
 
@@ -685,19 +715,15 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px">
-      <h2>Kennzahlen heute</h2>
-      <div class="kpi-grid">
-        <div class="kpi" id="kpi_brmr"><div class="lab">Bruttomietrendite</div><div class="val" id="k_brmr">0 %</div><div class="sub">Jahreskaltmiete / Kaufpreis</div></div>
-        <div class="kpi" id="kpi_nmr"><div class="lab">Nettomietrendite</div><div class="val" id="k_nmr">0 %</div><div class="sub">(Jahres-NKM − Bewirt.) / Gesamtinvest.</div></div>
-        <div class="kpi"><div class="lab">Kaufpreis-Faktor</div><div class="val" id="k_faktor">0×</div><div class="sub">Kaufpreis / Jahreskaltmiete</div></div>
-        <div class="kpi" id="kpi_cf"><div class="lab">Cashflow operativ / Monat</div><div class="val" id="k_cfop">0 €</div></div>
-        <div class="kpi" id="kpi_cfst"><div class="lab">Cashflow nach Steuern / Monat</div><div class="val" id="k_cfst">0 €</div></div>
-        <div class="kpi" id="kpi_ekr"><div class="lab">Eigenkapitalrendite p.a.</div><div class="val" id="k_ekr">0 %</div><div class="sub">inkl. Tilgung + Wertsteig.</div></div>
-        <div class="kpi"><div class="lab">EK-Rendite ohne Wertsteig.</div><div class="val" id="k_ekr_ohne">0 %</div></div>
-        <div class="kpi"><div class="lab">Vermögenszuwachs p.a.</div><div class="val" id="k_vz">0 €</div><div class="sub">Tilgung + Wertsteigerung</div></div>
+    <details class="card" style="margin-top:14px">
+      <summary style="cursor:pointer;font-size:15px;font-weight:600;color:var(--primary);list-style:none">Steuerliche Annahmen anpassen ▾</summary>
+      <div class="grid grid-4" style="margin-top:12px">
+        <div class="field"><label>Persönlicher Grenzsteuersatz (%)</label><input type="number" id="grenzst" step="1" value="42" oninput="save();calcAll()"></div>
+        <div class="field"><label>Soli berücksichtigen?</label><select id="soli" onchange="save();calcAll()"><option value="0">Nein</option><option value="1">Ja (5,5 % auf ESt)</option></select></div>
+        <div class="field"><label>Kirchensteuer (%)</label><input type="number" id="kist" step="1" value="0" oninput="save();calcAll()"></div>
+        <div class="field"><label>Effektiver Steuersatz</label><input type="number" id="grenz_eff" readonly></div>
       </div>
-    </div>
+    </details>
   </div>
 
   <!-- ===================== TAB: VERLAUF ===================== -->
@@ -763,7 +789,34 @@ function setVal(id,v){ const e=document.getElementById(id); if(e && document.act
 function switchTab(name){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.id==='tab-'+name));
-  window.scrollTo({top:0,behavior:'smooth'});
+  // scroll active nav button into view (mobile horizontal scroll)
+  const activeBtn = document.querySelector('.nav-btn.active');
+  if(activeBtn){
+    try{ activeBtn.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'}); }catch(e){}
+  }
+  // page scroll (respect reduced-motion)
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({top:0, behavior: reduce ? 'auto' : 'smooth'});
+}
+
+const DISCLAIMER_KEY = 'immo-tool-disclaimer-seen-v1';
+function dismissDisclaimer(){
+  const el = document.getElementById('disclaimer');
+  if(el) el.classList.add('hidden');
+  try{ localStorage.setItem(DISCLAIMER_KEY, '1'); }catch(e){}
+}
+function showDisclaimer(){
+  const el = document.getElementById('disclaimer');
+  if(el) el.classList.remove('hidden');
+  try{ localStorage.removeItem(DISCLAIMER_KEY); }catch(e){}
+  el?.scrollIntoView({behavior:'smooth', block:'center'});
+}
+function initDisclaimer(){
+  try{
+    if(localStorage.getItem(DISCLAIMER_KEY)==='1'){
+      document.getElementById('disclaimer')?.classList.add('hidden');
+    }
+  }catch(e){}
 }
 
 function onBundeslandChange(){
@@ -1810,6 +1863,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   setupPdfDrop();
   setupBookmarklet();
   applyUrlParams();
+  initDisclaimer();
 
   // mark manuelle Override für AWM/NHK wenn User selbst tippt
   ['awm','nhk'].forEach(id=>{
